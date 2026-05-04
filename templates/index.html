@@ -1,1 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algae AI | Control Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .card { background-color: #1e293b; border: none; border-radius: 15px; box-shadow: 0 10px 15px rgba(0,0,0,0.3); }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; font-weight: bold; }
+        .result-box { border-left: 4px solid #10b981; background: #064e3b; padding: 20px; border-radius: 8px; display: none; margin-top: 20px; }
+        .form-control, .form-select { background-color: #334155; border: 1px solid #475569; color: white; }
+        .form-control:focus { background-color: #334155; color: white; border-color: #3b82f6; }
+    </style>
+</head>
+<body>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="text-center mb-5">
+                <h1 class="fw-bold text-info">Desmodesmus AI Optimizer</h1>
+                <p class="text-secondary">Cloud-Based Bioprocess Management System</p>
+            </div>
 
+            <div class="card p-4">
+                <form id="aiForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-light">Container ID</label>
+                            <input type="text" name="container" class="form-control" placeholder="Pond A / Bio B" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-light">Environment Type</label>
+                            <select name="environment" class="form-select">
+                                <option value="0">Open Pond (Air Only)</option>
+                                <option value="1">Bioreactor (CO2 Injection)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Current pH</label>
+                            <input type="number" step="0.01" name="ph" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Nitrate (mg/L)</label>
+                            <input type="number" step="0.1" name="nitrate" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-light">Volume (ml)</label>
+                            <input type="number" name="volume" class="form-control" value="1000" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mt-4 py-3">PROCESS DATA & TRAIN AI</button>
+                </form>
+
+                <div id="result" class="result-box">
+                    <h5 class="text-success mb-2">✓ Analysis Complete</h5>
+                    <p id="doseText" class="fs-4 fw-bold mb-0 text-white"></p>
+                    <p id="predText" class="text-info mb-0"></p>
+                    <p class="text-secondary mt-2" style="font-size: 0.8rem;">Data has been synced to Algae_Data_Master Google Sheet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('aiForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button');
+        btn.innerText = "Processing Cloud Data...";
+        btn.disabled = true;
+
+        const formData = new FormData(e.target);
+        const res = await fetch('/process', { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        btn.innerText = "PROCESS DATA & TRAIN AI";
+        btn.disabled = false;
+
+        if(data.status === 'success') {
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('doseText').innerText = "Suggested Pineapple Dose: " + data.dose + " ml";
+            document.getElementById('predText').innerText = "Predicted OD (Day +1): " + data.prediction;
+        } else {
+            alert("Error: " + data.message);
+        }
+    };
+</script>
+</body>
+</html>
