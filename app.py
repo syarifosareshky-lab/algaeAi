@@ -1,63 +1,99 @@
-import os, json
+import os
+import json
 from flask import Flask, render_template, request, jsonify
-import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
-from xgboost import XGBRegressor
 from datetime import datetime
+
+# Import the AI brain from your other file
 from model_logic import train_and_predict_pineapple
 
 app = Flask(__name__)
 
-def get_sheet(sheet_name):
+# --- GOOGLE SHEETS CONNECTION CONFIG ---
+def get_google_client():
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     creds_json = os.environ.get("GOOGLE_CREDENTIALS")
+    if not creds_json:
+        raise ValueError("GOOGLE_CREDENTIALS environment variable not set on Render!")
+    
     creds_dict = json.loads(creds_json)
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    client = gspread.authorize(creds)
-    # Opens the master file and selects the tab based on Container ID (Bio_A, Bio_B, etc)
-    return client.open("Algae_Data_Master").worksheet(sheet_name)
+    return gspread.authorize(creds)
+
+# --- ROUTES ---
 
 @app.route('/')
 def index():
+    """Serves the professional dashboard UI"""
     return render_template('index.html')
 
 @app.route('/process', methods=['POST'])
 def process():
     try:
-        # 1. Get Inputs from UI
-        container = request.form.get('container') # e.g. "Bio_A"
+        # 1. Capture Data from the Dashboard Form
+        container = request.form.get('container') # Must match Tab Name (e.g., Bio_A)
         ph = float(request.form.get('ph'))
         nitrate = float(request.form.get('nitrate'))
-        vol = float(request.form.get('volume')) # In ml
+        vol_ml = float(request.form.get('volume'))
         env = int(request.form.get('environment'))
         
-        # 2. Decision Logic (Nitrate Rule: 1ml stock adds 6ppm per 10L)
-        kno3_advice = "Stable"
+        # 2. Access Google Sheets
+        client = get_google_client()
+        spreadsheet = client.open("Algae_Data_Master")
+        
+        try:
+            ws = spreadsheet.worksheet(container)
+        except Exception:
+            return jsonify({"status": "error", "message": f"Tab '{container}' not found in Google Sheets!"})
+
+        # 3. Decision Support: Nitrate Rule (1ml stock = 6ppm/10L)
+        kno3_advice = "Status: Stable"
         if nitrate < 70:
             shortfall = 80 - nitrate
-            dose = (shortfall / 6) * (vol / 10000) # Math: (Gap / 6) * (Current Liters / 10)
-            kno3_advice = f"ADD {round(dose, 2)} ml KNO3 Stock"
-        
-        # 3. Decision Logic (pH Safety)
-        ph_status = "Healthy"
-        if ph < 8.2: ph_status = "CRITICAL: ACIDIC (Stop Pineapple)"
-        elif ph > 10.0: ph_status = "HIGH: Increase CO2/Air"
+            # Formula: (Gap / 6ppm) * (Current Volume in Liters / 10L)
+            kno3_ml = (shortfall / 6) * (vol_ml / 10000)
+            kno3_advice = f"ACTION: Add {round(kno3_ml, 2)} ml KNO3 Stock"
+        elif nitrate > 100:
+            kno3_advice = "ACTION: High Nitrate - Do not dose"
 
-        # 4. Save to Google Sheet Tab
-        ws = get_sheet(container)
-        date_now = datetime.now().strftime("%Y-%m-%d")
-        # Matches your sheet: Vol, Date, Blank OD, pH, Nitrate
-        ws.append_row([vol/1000, date_now, "", "", "", "", ph, ph, ph, ph, nitrate])
+        # 4. Decision Support: pH Safety Warning
+        ph_status = "System: Healthy"
+        if ph < 8.2:
+            ph_status = "CRITICAL: Acidic! Stop Pineapple feeding."
+        elif ph > 10.2:
+            ph_status = "WARNING: High pH! Increase CO2/Air."
 
+        # 5. AI Brain: Get Pineapple Prediction
+        # Fetch all data from the sheet to train the model
+        historical_data = ws.get_all_values()
+        pineapple_dose, predicted_od = train_and_predict_pineapple(
+            historical_data, ph, nitrate, vol_ml, env
+        )
+
+        # 6. Data Logging: Append to the correct Google Sheet tab
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        # Row layout matching your sheet: Vol(L), Date, [Empty ODs], [Empty pHs], Nitrate
+        # We fill only one pH column and the nitrate column for consistency
+        new_row = [vol_ml/1000, date_str, "", "", "", "", ph, "", "", "", nitrate]
+        ws.append_row(new_row)
+
+        # 7. Return Results to the Dashboard
         return jsonify({
             "status": "success",
             "kno3": kno3_advice,
             "ph_warn": ph_status,
-            "pineapple": "10.0 ml" # This will come from your model_logic later
+            "pineapple": f"{pineapple_dose} ml",
+            "prediction": f"Day +1 Predicted OD: {predicted_od}"
         })
+
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/health')
+def health():
+    return "AI Dashboard Active", 200
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
