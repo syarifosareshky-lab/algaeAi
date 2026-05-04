@@ -1,140 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Algae AI | Control Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card { background-color: #1e293b; border: none; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
-        .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; padding: 12px; font-weight: 600; transition: 0.3s; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5); }
-        .form-label { color: #94a3b8; font-size: 0.9rem; font-weight: 500; }
-        .form-control, .form-select { background-color: #334155; border: 1px solid #475569; color: white; border-radius: 10px; }
-        .form-control:focus, .form-select:focus { background-color: #334155; color: white; border-color: #3b82f6; box-shadow: none; }
-        .result-box { border-left: 5px solid #10b981; background: rgba(16, 185, 129, 0.1); padding: 25px; border-radius: 12px; display: none; margin-top: 25px; animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .header-gradient { background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    </style>
-</head>
-<body>
+import os, json
+from flask import Flask, render_template, request, jsonify
+import pandas as pd
+import gspread
+from google.oauth2.service_account import Credentials
+from xgboost import XGBRegressor
+from datetime import datetime
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="text-center mb-5">
-                <h1 class="fw-bold header-gradient">Desmodesmus AI Optimizer</h1>
-                <p class="text-secondary">Master's Thesis: Autonomous Biomass Control System</p>
-            </div>
+app = Flask(__name__)
 
-            <div class="card p-4 p-md-5">
-                <form id="aiForm">
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <label class="form-label">Container Identification</label>
-                            <input type="text" name="container" class="form-control" placeholder="e.g., Pond A1" required>
-                        </div>
+def get_sheet(sheet_name):
+    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS")
+    creds_dict = json.loads(creds_json)
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(creds)
+    # Opens the master file and selects the tab based on Container ID (Bio_A, Bio_B, etc)
+    return client.open("Algae_Data_Master").worksheet(sheet_name)
 
-                        <div class="col-md-6">
-                            <label class="form-label">Culture Environment</label>
-                            <select name="environment" class="form-select" required>
-                                <option value="0">Open Pond (Atmospheric Air)</option>
-                                <option value="1">Bioreactor (CO2 Injection)</option>
-                            </select>
-                        </div>
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-                        <div class="col-md-4">
-                            <label class="form-label">Current pH</label>
-                            <input type="number" step="0.01" name="ph" class="form-control" placeholder="7.0" required>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Nitrate Level (ppm)</label>
-                            <select name="nitrate" class="form-select" required>
-                                <option value="0">0 (Yellow)</option>
-                                <option value="5">5 (Orange)</option>
-                                <option value="10">10 (Deep Orange)</option>
-                                <option value="20">20 (Pink/Light Red)</option>
-                                <option value="40">40 (Red)</option>
-                                <option value="80">80 (Dark Red)</option>
-                                <option value="160">160 (Very Dark Red)</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Culture Volume (ml)</label>
-                            <input type="number" name="volume" class="form-control" value="1000" required>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100 mt-5 shadow-sm" id="submitBtn">
-                        RUN XGBOOST OPTIMIZATION
-                    </button>
-                </form>
-
-                <div id="result" class="result-box">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="spinner-grow text-success spinner-grow-sm me-2"></div>
-                        <h5 class="text-success fw-bold mb-0">Optimization Successful</h5>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p class="text-secondary small mb-1">Recommended Pineapple Juice</p>
-                            <h3 id="doseText" class="fw-bold text-white">--</h3>
-                        </div>
-                        <div class="col-md-6">
-                            <p class="text-secondary small mb-1">Predicted OD (Next 24h)</p>
-                            <h3 id="predText" class="fw-bold text-info">--</h3>
-                        </div>
-                    </div>
-                    <hr class="text-secondary">
-                    <p class="small text-secondary mb-0">✓ Data synced to Algae_Data_Master Sheet.</p>
-                </div>
-            </div>
-            
-            <p class="text-center text-secondary mt-4 small">Server Status: <span class="text-success">● Connected to Render Cloud</span></p>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.getElementById('aiForm').onsubmit = async (e) => {
-        e.preventDefault();
+@app.route('/process', methods=['POST'])
+def process():
+    try:
+        # 1. Get Inputs from UI
+        container = request.form.get('container') # e.g. "Bio_A"
+        ph = float(request.form.get('ph'))
+        nitrate = float(request.form.get('nitrate'))
+        vol = float(request.form.get('volume')) # In ml
+        env = int(request.form.get('environment'))
         
-        // UI Loading State
-        const btn = document.getElementById('submitBtn');
-        const resultBox = document.getElementById('result');
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing Data...';
-        btn.disabled = true;
-
-        const formData = new FormData(e.target);
+        # 2. Decision Logic (Nitrate Rule: 1ml stock adds 6ppm per 10L)
+        kno3_advice = "Stable"
+        if nitrate < 70:
+            shortfall = 80 - nitrate
+            dose = (shortfall / 6) * (vol / 10000) # Math: (Gap / 6) * (Current Liters / 10)
+            kno3_advice = f"ADD {round(dose, 2)} ml KNO3 Stock"
         
-        try {
-            const response = await fetch('/process', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const data = await response.json();
+        # 3. Decision Logic (pH Safety)
+        ph_status = "Healthy"
+        if ph < 8.2: ph_status = "CRITICAL: ACIDIC (Stop Pineapple)"
+        elif ph > 10.0: ph_status = "HIGH: Increase CO2/Air"
 
-            if (data.status === 'success') {
-                resultBox.style.display = 'block';
-                document.getElementById('doseText').innerText = data.dose + " ml";
-                document.getElementById('predText').innerText = data.prediction;
-                // Scroll to result
-                resultBox.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                alert("Error from AI Server: " + data.message);
-            }
-        } catch (error) {
-            alert("Connection Error. Is your Render server online?");
-        } finally {
-            btn.innerHTML = 'RUN XGBOOST OPTIMIZATION';
-            btn.disabled = false;
-        }
-    };
-</script>
+        # 4. Save to Google Sheet Tab
+        ws = get_sheet(container)
+        date_now = datetime.now().strftime("%Y-%m-%d")
+        # Matches your sheet: Vol, Date, Blank OD, pH, Nitrate
+        ws.append_row([vol/1000, date_now, "", "", "", "", ph, ph, ph, ph, nitrate])
 
-</body>
-</html>
+        return jsonify({
+            "status": "success",
+            "kno3": kno3_advice,
+            "ph_warn": ph_status,
+            "pineapple": "10.0 ml" # This will come from your model_logic later
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
