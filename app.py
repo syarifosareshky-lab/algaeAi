@@ -5,6 +5,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from xgboost import XGBRegressor
 from datetime import datetime
+from model_logic import train_and_predict_pineapple
 
 app = Flask(__name__)
 
