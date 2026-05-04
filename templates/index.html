@@ -1,62 +1,78 @@
-import os, json
-from flask import Flask, render_template, request, jsonify
-import pandas as pd
-import gspread
-from google.oauth2.service_account import Credentials
-from xgboost import XGBRegressor
-from datetime import datetime
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Algae AI | Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; }
+        .card { background: #1e293b; border: none; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .stat-card { border-left: 5px solid #3b82f6; padding: 15px; }
+        .btn-primary { background: #3b82f6; border: none; padding: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container py-5">
+    <h2 class="text-info mb-4 text-center">Desmodesmus AI Optimizer</h2>
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card p-4">
+                <form id="aiForm">
+                    <label class="form-label">Container ID (Tab Name)</label>
+                    <input type="text" name="container" class="form-control mb-3" placeholder="Bio_A" required>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <label class="form-label">pH Reading</label>
+                            <input type="number" step="0.1" name="ph" class="form-control mb-3" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Nitrate (ppm)</label>
+                            <input type="number" name="nitrate" class="form-control mb-3" required>
+                        </div>
+                    </div>
 
-app = Flask(__name__)
+                    <label class="form-label">Current Volume (ml)</label>
+                    <input type="number" name="volume" class="form-control mb-3" value="10000">
 
-def get_sheet(sheet_name):
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds_json = os.environ.get("GOOGLE_CREDENTIALS")
-    creds_dict = json.loads(creds_json)
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    client = gspread.authorize(creds)
-    # Opens the master file and selects the tab based on Container ID (Bio_A, Bio_B, etc)
-    return client.open("Algae_Data_Master").worksheet(sheet_name)
+                    <input type="hidden" name="environment" value="1">
+                    <button type="submit" class="btn btn-primary w-100 mt-2">RUN AI ANALYSIS</button>
+                </form>
+            </div>
+        </div>
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+        <div class="col-md-6">
+            <div id="results" style="display:none;">
+                <div class="card stat-card">
+                    <h6 class="text-info">Carbon Source (Pineapple Juice)</h6>
+                    <h3 id="pineRes">--</h3>
+                    <small id="predRes" class="text-secondary"></small>
+                </div>
+                <div class="card stat-card" style="border-left-color: #10b981;">
+                    <h6 class="text-success">Nutrient Action</h6>
+                    <h4 id="kno3Res">--</h4>
+                </div>
+                <div class="card stat-card" style="border-left-color: #ef4444;">
+                    <h6 class="text-danger">Safety Alert</h6>
+                    <h5 id="phWarn">--</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-@app.route('/process', methods=['POST'])
-def process():
-    try:
-        # 1. Get Inputs from UI
-        container = request.form.get('container') # e.g. "Bio_A"
-        ph = float(request.form.get('ph'))
-        nitrate = float(request.form.get('nitrate'))
-        vol = float(request.form.get('volume')) # In ml
-        env = int(request.form.get('environment'))
-        
-        # 2. Decision Logic (Nitrate Rule: 1ml stock adds 6ppm per 10L)
-        kno3_advice = "Stable"
-        if nitrate < 70:
-            shortfall = 80 - nitrate
-            dose = (shortfall / 6) * (vol / 10000) # Math: (Gap / 6) * (Current Liters / 10)
-            kno3_advice = f"ADD {round(dose, 2)} ml KNO3 Stock"
-        
-        # 3. Decision Logic (pH Safety)
-        ph_status = "Healthy"
-        if ph < 8.2: ph_status = "CRITICAL: ACIDIC (Stop Pineapple)"
-        elif ph > 10.0: ph_status = "HIGH: Increase CO2/Air"
-
-        # 4. Save to Google Sheet Tab
-        ws = get_sheet(container)
-        date_now = datetime.now().strftime("%Y-%m-%d")
-        # Matches your sheet: Vol, Date, Blank OD, pH, Nitrate
-        ws.append_row([vol/1000, date_now, "", "", "", "", ph, ph, ph, ph, nitrate])
-
-        return jsonify({
-            "status": "success",
-            "kno3": kno3_advice,
-            "ph_warn": ph_status,
-            "pineapple": "10.0 ml" # This will come from your model_logic later
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+<script>
+    document.getElementById('aiForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const res = await fetch('/process', { method: 'POST', body: new FormData(e.target) });
+        const data = await res.json();
+        if(data.status === 'success') {
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('pineRes').innerText = "Add " + data.pineapple;
+            document.getElementById('predRes').innerText = data.prediction;
+            document.getElementById('kno3Res').innerText = data.kno3;
+            document.getElementById('phWarn').innerText = data.ph_warn;
+        } else { alert("Error: " + data.message); }
+    };
+</script>
+</body>
+</html>
