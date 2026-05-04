@@ -5,96 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Desmodesmus AI Optimizer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0b0f0f; --card: #151d1d; --border: #263636; --green: #10b981; }
-        body { background: var(--bg); color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        :root { --bg: #0b0f0f; --card: #151d1d; --border: #263636; --green: #10b981; --blue: #3b82f6; }
+        body { background: var(--bg); color: #e2e8f0; font-family: sans-serif; }
         .card-custom { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .form-control { background: #0b0f0f; border: 1px solid var(--border); color: white; padding: 10px; }
+        .form-control { background: #0b0f0f; border: 1px solid var(--border); color: white; }
         .form-control:focus { background: #0b0f0f; color: white; border-color: var(--green); box-shadow: none; }
-        .btn-ai { background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold; letter-spacing: 1px; padding: 15px; }
-        .result-box { border-left: 5px solid var(--green); background: rgba(16, 185, 129, 0.05); padding: 20px; border-radius: 8px; margin-bottom: 15px; }
+        .btn-ai { background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold; padding: 15px; }
+        .result-box { border-left: 5px solid var(--green); background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 12px; }
+        .avg-label { font-size: 0.8rem; color: #64748b; }
     </style>
 </head>
 <body>
 
 <div class="container py-5">
-    <div class="text-center mb-5">
-        <h1 class="fw-bold text-success">ALGAE AI CONTROL</h1>
-        <p class="text-secondary">Precision Decision Support System for Desmodesmus sp.</p>
-    </div>
+    <header class="text-center mb-5">
+        <h1 class="fw-bold text-success text-uppercase">Algae AI Decision Support</h1>
+        <p class="text-secondary">Precision Carbon & Nutrient Optimization Framework</p>
+    </header>
 
     <div class="row g-4">
         <div class="col-lg-5">
             <div class="card-custom">
                 <form id="labForm">
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Culture ID (Tab Name)</label>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">TAB NAME (CONTAINER ID)</label>
                         <input type="text" name="container" class="form-control" placeholder="Bio_A" required>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label text-info fw-bold">pH Readings (n=3)</label>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-info">pH READINGS (TRIPLICATE)</label>
                         <div class="d-flex gap-2">
-                            <input type="number" step="0.01" name="ph1" class="form-control ph-calc" placeholder="1" required>
-                            <input type="number" step="0.01" name="ph2" class="form-control ph-calc" placeholder="2" required>
-                            <input type="number" step="0.01" name="ph3" class="form-control ph-calc" placeholder="3" required>
+                            <input type="number" step="0.01" name="ph1" class="form-control ph-in" placeholder="1" required>
+                            <input type="number" step="0.01" name="ph2" class="form-control ph-in" placeholder="2" required>
+                            <input type="number" step="0.01" name="ph3" class="form-control ph-in" placeholder="3" required>
                         </div>
-                        <small class="text-secondary">Mean pH: <span id="phAvg" class="text-white fw-bold">--</span></small>
+                        <div class="avg-label mt-1">Mean pH: <span id="phAvg" class="text-white">--</span></div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label text-success fw-bold">OD Readings (n=3)</label>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-success">OD READINGS (680nm)</label>
                         <div class="d-flex gap-2">
-                            <input type="number" step="0.0001" name="od1" class="form-control od-calc" placeholder="1" required>
-                            <input type="number" step="0.0001" name="od2" class="form-control od-calc" placeholder="2" required>
-                            <input type="number" step="0.0001" name="od3" class="form-control od-calc" placeholder="3" required>
+                            <input type="number" step="0.0001" name="od1" class="form-control od-in" placeholder="1" required>
+                            <input type="number" step="0.0001" name="od2" class="form-control od-in" placeholder="2" required>
+                            <input type="number" step="0.0001" name="od3" class="form-control od-in" placeholder="3" required>
                         </div>
-                        <small class="text-secondary">Mean OD: <span id="odAvg" class="text-white fw-bold">--</span></small>
+                        <div class="avg-label mt-1">Mean OD: <span id="odAvg" class="text-white">--</span></div>
                     </div>
 
                     <div class="row mb-4">
                         <div class="col-6">
-                            <label class="form-label fw-bold">Nitrate (ppm)</label>
+                            <label class="small fw-bold">NITRATE (ppm)</label>
                             <input type="number" name="nitrate" class="form-control" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-bold">Volume (ml)</label>
+                            <label class="small fw-bold">VOLUME (ml)</label>
                             <input type="number" name="volume" class="form-control" value="10000">
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-ai w-100 text-white">GENERATE AI DECISION</button>
+                    <button type="submit" class="btn btn-ai w-100 text-white">GENERATE ANALYSIS</button>
                 </form>
             </div>
         </div>
 
         <div class="col-lg-7">
             <div id="results" style="display:none;">
-                <div class="result-box" style="border-color: #3b82f6;">
-                    <label class="text-secondary small">1. CARBON SOURCE DOSE (PINEAPPLE)</label>
-                    <h2 class="text-primary fw-bold" id="resPine">-- ml</h2>
-                    <p class="mb-0 text-secondary" id="resPred"></p>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="result-box" style="border-color: var(--blue);">
+                            <label class="text-secondary small fw-bold">PINEAPPLE JUICE DOSAGE</label>
+                            <h2 class="text-primary fw-bold" id="resPine">--</h2>
+                            <p class="mb-0 text-secondary small" id="resPred"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="result-box">
+                            <label class="text-secondary small fw-bold">KNO3 ADJUSTMENT</label>
+                            <h4 class="text-success fw-bold" id="resKno3">--</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="result-box" style="border-color: #ef4444;">
+                            <label class="text-secondary small fw-bold">CULTURE HEALTH</label>
+                            <h4 class="text-danger fw-bold" id="resHealth">--</h4>
+                        </div>
+                    </div>
                 </div>
-                <div class="result-box">
-                    <label class="text-secondary small">2. NUTRIENT ADJUSTMENT (KNO3)</label>
-                    <h3 class="text-success fw-bold" id="resKno3">--</h3>
-                </div>
-                <div class="result-box" style="border-color: #ef4444;">
-                    <label class="text-secondary small">3. SYSTEM HEALTH ALERTS</label>
-                    <h4 class="text-danger fw-bold" id="resHealth">--</h4>
+                <div class="card-custom mt-3">
+                    <canvas id="growthChart" height="200"></canvas>
                 </div>
             </div>
             <div id="empty" class="card-custom text-center py-5 text-secondary">
-                <h3>System Ready</h3>
-                <p>Awaiting Lab Data Ingestion...</p>
+                <h3>Awaiting Lab Input</h3>
+                <p>System ready for data synchronization.</p>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Real-time Averaging Logic
-    function handleAvg(selector, target, dec) {
+    let chart;
+    // UI Averaging
+    function setupAvg(selector, target, dec) {
         document.querySelectorAll(selector).forEach(el => {
             el.addEventListener('input', () => {
                 let sum = 0, count = 0;
@@ -105,19 +119,18 @@
             });
         });
     }
-    handleAvg('.ph-calc', 'phAvg', 2);
-    handleAvg('.od-calc', 'odAvg', 4);
+    setupAvg('.ph-in', 'phAvg', 2); setupAvg('.od-in', 'odAvg', 4);
 
-    // Form Submission
+    // Form Submit
     document.getElementById('labForm').onsubmit = async (e) => {
         e.preventDefault();
         const btn = e.target.querySelector('button');
-        btn.innerText = "Analyzing Cloud Data..."; btn.disabled = true;
+        btn.innerText = "Syncing Cloud..."; btn.disabled = true;
 
         const res = await fetch('/process', { method: 'POST', body: new FormData(e.target) });
         const data = await res.json();
         
-        btn.innerText = "GENERATE AI DECISION"; btn.disabled = false;
+        btn.innerText = "GENERATE ANALYSIS"; btn.disabled = false;
         if(data.status === 'success') {
             document.getElementById('empty').style.display = 'none';
             document.getElementById('results').style.display = 'block';
@@ -125,6 +138,16 @@
             document.getElementById('resPred').innerText = data.prediction;
             document.getElementById('resKno3').innerText = data.kno3;
             document.getElementById('resHealth').innerText = data.ph_warn;
+            
+            // Update Graph
+            const labels = data.history.slice(1).map(r => r[1]);
+            const values = data.history.slice(1).map(r => parseFloat(r[5]));
+            if(chart) chart.destroy();
+            chart = new Chart(document.getElementById('growthChart'), {
+                type: 'line',
+                data: { labels: labels, datasets: [{ label: 'Avg OD', data: values, borderColor: '#10b981', tension: 0.3, fill: true, backgroundColor: 'rgba(16,185,129,0.1)' }] },
+                options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#64748b' } }, x: { ticks: { color: '#64748b' } } } }
+            });
         }
     };
 </script>
