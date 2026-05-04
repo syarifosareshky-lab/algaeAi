@@ -1,77 +1,131 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Algae AI | Control</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desmodesmus AI Optimizer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; }
-        .card { background: #1e293b; border: none; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .stat-card { border-left: 5px solid #3b82f6; padding: 15px; }
-        .btn-primary { background: #3b82f6; border: none; padding: 12px; font-weight: bold; }
+        :root { --bg: #0b0f0f; --card: #151d1d; --border: #263636; --green: #10b981; }
+        body { background: var(--bg); color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .card-custom { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .form-control { background: #0b0f0f; border: 1px solid var(--border); color: white; padding: 10px; }
+        .form-control:focus { background: #0b0f0f; color: white; border-color: var(--green); box-shadow: none; }
+        .btn-ai { background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold; letter-spacing: 1px; padding: 15px; }
+        .result-box { border-left: 5px solid var(--green); background: rgba(16, 185, 129, 0.05); padding: 20px; border-radius: 8px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
+
 <div class="container py-5">
-    <h2 class="text-info mb-4 text-center">Desmodesmus AI Optimizer</h2>
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card p-4">
-                <form id="aiForm">
-                    <label class="form-label">Container ID (Tab Name)</label>
-                    <input type="text" name="container" class="form-control mb-3" placeholder="Bio_A" required>
-                    
-                    <div class="row">
+    <div class="text-center mb-5">
+        <h1 class="fw-bold text-success">ALGAE AI CONTROL</h1>
+        <p class="text-secondary">Precision Decision Support System for Desmodesmus sp.</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card-custom">
+                <form id="labForm">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Culture ID (Tab Name)</label>
+                        <input type="text" name="container" class="form-control" placeholder="Bio_A" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-info fw-bold">pH Readings (n=3)</label>
+                        <div class="d-flex gap-2">
+                            <input type="number" step="0.01" name="ph1" class="form-control ph-calc" placeholder="1" required>
+                            <input type="number" step="0.01" name="ph2" class="form-control ph-calc" placeholder="2" required>
+                            <input type="number" step="0.01" name="ph3" class="form-control ph-calc" placeholder="3" required>
+                        </div>
+                        <small class="text-secondary">Mean pH: <span id="phAvg" class="text-white fw-bold">--</span></small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-success fw-bold">OD Readings (n=3)</label>
+                        <div class="d-flex gap-2">
+                            <input type="number" step="0.0001" name="od1" class="form-control od-calc" placeholder="1" required>
+                            <input type="number" step="0.0001" name="od2" class="form-control od-calc" placeholder="2" required>
+                            <input type="number" step="0.0001" name="od3" class="form-control od-calc" placeholder="3" required>
+                        </div>
+                        <small class="text-secondary">Mean OD: <span id="odAvg" class="text-white fw-bold">--</span></small>
+                    </div>
+
+                    <div class="row mb-4">
                         <div class="col-6">
-                            <label class="form-label">pH Reading</label>
-                            <input type="number" step="0.1" name="ph" class="form-control mb-3" required>
+                            <label class="form-label fw-bold">Nitrate (ppm)</label>
+                            <input type="number" name="nitrate" class="form-control" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label">Nitrate (ppm)</label>
-                            <input type="number" name="nitrate" class="form-control mb-3" required>
+                            <label class="form-label fw-bold">Volume (ml)</label>
+                            <input type="number" name="volume" class="form-control" value="10000">
                         </div>
                     </div>
 
-                    <label class="form-label">Current Volume (ml)</label>
-                    <input type="number" name="volume" class="form-control mb-3" value="10000">
-
-                    <input type="hidden" name="environment" value="1">
-                    <button type="submit" class="btn btn-primary w-100 mt-2">RUN AI ANALYSIS</button>
+                    <button type="submit" class="btn btn-ai w-100 text-white">GENERATE AI DECISION</button>
                 </form>
             </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-lg-7">
             <div id="results" style="display:none;">
-                <div class="card stat-card">
-                    <h6 class="text-info">Carbon Source (Pineapple Juice)</h6>
-                    <h3 id="pineRes">--</h3>
-                    <small id="predRes" class="text-secondary"></small>
+                <div class="result-box" style="border-color: #3b82f6;">
+                    <label class="text-secondary small">1. CARBON SOURCE DOSE (PINEAPPLE)</label>
+                    <h2 class="text-primary fw-bold" id="resPine">-- ml</h2>
+                    <p class="mb-0 text-secondary" id="resPred"></p>
                 </div>
-                <div class="card stat-card" style="border-left-color: #10b981;">
-                    <h6 class="text-success">Nutrient Action</h6>
-                    <h4 id="kno3Res">--</h4>
+                <div class="result-box">
+                    <label class="text-secondary small">2. NUTRIENT ADJUSTMENT (KNO3)</label>
+                    <h3 class="text-success fw-bold" id="resKno3">--</h3>
                 </div>
-                <div class="card stat-card" style="border-left-color: #ef4444;">
-                    <h6 class="text-danger">Safety Alert</h6>
-                    <h5 id="phWarn">--</h5>
+                <div class="result-box" style="border-color: #ef4444;">
+                    <label class="text-secondary small">3. SYSTEM HEALTH ALERTS</label>
+                    <h4 class="text-danger fw-bold" id="resHealth">--</h4>
                 </div>
+            </div>
+            <div id="empty" class="card-custom text-center py-5 text-secondary">
+                <h3>System Ready</h3>
+                <p>Awaiting Lab Data Ingestion...</p>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    document.getElementById('aiForm').onsubmit = async (e) => {
+    // Real-time Averaging Logic
+    function handleAvg(selector, target, dec) {
+        document.querySelectorAll(selector).forEach(el => {
+            el.addEventListener('input', () => {
+                let sum = 0, count = 0;
+                document.querySelectorAll(selector).forEach(i => {
+                    if(i.value) { sum += parseFloat(i.value); count++; }
+                });
+                document.getElementById(target).innerText = count > 0 ? (sum/count).toFixed(dec) : "--";
+            });
+        });
+    }
+    handleAvg('.ph-calc', 'phAvg', 2);
+    handleAvg('.od-calc', 'odAvg', 4);
+
+    // Form Submission
+    document.getElementById('labForm').onsubmit = async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button');
+        btn.innerText = "Analyzing Cloud Data..."; btn.disabled = true;
+
         const res = await fetch('/process', { method: 'POST', body: new FormData(e.target) });
         const data = await res.json();
+        
+        btn.innerText = "GENERATE AI DECISION"; btn.disabled = false;
         if(data.status === 'success') {
+            document.getElementById('empty').style.display = 'none';
             document.getElementById('results').style.display = 'block';
-            document.getElementById('pineRes').innerText = "Add " + data.pineapple;
-            document.getElementById('predRes').innerText = data.prediction;
-            document.getElementById('kno3Res').innerText = data.kno3;
-            document.getElementById('phWarn').innerText = data.ph_warn;
-        } else { alert("Error: " + data.message); }
+            document.getElementById('resPine').innerText = "Add " + data.pineapple;
+            document.getElementById('resPred').innerText = data.prediction;
+            document.getElementById('resKno3').innerText = data.kno3;
+            document.getElementById('resHealth').innerText = data.ph_warn;
+        }
     };
 </script>
 </body>
