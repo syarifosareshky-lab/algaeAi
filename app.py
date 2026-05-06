@@ -42,6 +42,7 @@ STANDARD_HEADERS = [
     "pH3",
     "AvgPH",
     "Nitrate",
+    "NitrateStatus",
     "PineappleDose",
     "KNO3Dose",
     "AirFlowRate_L_min",
@@ -97,10 +98,6 @@ def get_spreadsheet():
 
 
 def ensure_header(worksheet):
-    """
-    Auto-add or auto-repair header row without deleting old data.
-    """
-
     values = worksheet.get_all_values()
 
     if not values:
@@ -117,29 +114,41 @@ def ensure_header(worksheet):
 
 
 def optional_float(form_value):
-    """
-    Return blank if optional input is empty.
-    Otherwise return float.
-    """
     if form_value is None or str(form_value).strip() == "":
         return ""
     return float(form_value)
 
 
-def numeric_or_zero(value):
-    if value == "" or value is None:
-        return 0
-    return float(value)
+def safe_parse_float(value):
+    try:
+        if value is None or value == "":
+            return None
+        return float(value)
+    except Exception:
+        return None
+
+
+def get_previous_od_from_history(historical_data, current_avg_od):
+    """
+    Get PreviousOD automatically from the last saved AvgOD in the same container tab.
+    If no previous data exists, use current AvgOD to avoid artificial Day 1 jump.
+    """
+
+    if not historical_data or len(historical_data) <= 1:
+        return current_avg_od
+
+    rows = historical_data[1:]
+
+    for row in reversed(rows):
+        if len(row) > 13:
+            last_avg_od = safe_parse_float(row[13])
+            if last_avg_od is not None:
+                return round(last_avg_od, 4)
+
+    return current_avg_od
 
 
 def extract_image_features(image_file):
-    """
-    Extract simple RGB-based image features from uploaded algae culture image.
-
-    These are not deep learning features.
-    They are low-cost image indicators that can be used by scikit-learn models.
-    """
-
     if not image_file or image_file.filename == "":
         return {
             "ImageUploaded": "No",
@@ -154,8 +163,6 @@ def extract_image_features(image_file):
 
     image_bytes = image_file.read()
     image = Image.open(BytesIO(image_bytes)).convert("RGB")
-
-    # Resize to reduce processing load
     image = image.resize((300, 300))
 
     pixels = list(image.getdata())
@@ -313,8 +320,17 @@ def process():
         volume_l = float(request.form.get("volume_l"))
         sampling_volume_l = float(request.form.get("sampling_volume_l", 0))
 
-        previous_od = float(request.form.get("previous_od"))
-        nitrate = float(request.form.get("nitrate"))
+        nitrate_raw = request.form.get("nitrate", "").strip()
+        nitrate_status = request.form.get("nitrate_status", "Measured").strip()
+
+        if nitrate_raw == "":
+            nitrate = ""
+            nitrate_status = "Not Measured"
+            nitrate_for_ai = 80.0
+        else:
+            nitrate = float(nitrate_raw)
+            nitrate_for_ai = nitrate
+            nitrate_status = "Measured"
 
         pineapple_dose = float(request.form.get("pineapple_dose", 0))
         kno3_dose = float(request.form.get("kno3_dose", 0))
@@ -358,8 +374,9 @@ def process():
         worksheet = spreadsheet.worksheet(container)
 
         ensure_header(worksheet)
-
         historical_data = worksheet.get_all_values()
+
+        previous_od = get_previous_od_from_history(historical_data, avg_od)
 
         next_od_predicted = train_and_predict_next_od(
             historical_data=historical_data,
@@ -372,7 +389,7 @@ def process():
             previous_od=previous_od,
             avg_od=avg_od,
             avg_ph=avg_ph,
-            nitrate=nitrate,
+            nitrate=nitrate_for_ai,
             pineapple_dose=pineapple_dose,
             kno3_dose=kno3_dose,
             air_flow_rate=air_flow_rate,
@@ -394,26 +411,33 @@ def process():
             target_od=harvest_target_od
         )
 
-        kno3_advice = recommend_kno3(
-            nitrate=nitrate,
-            volume_l=volume_l
-        )
+        if nitrate_status == "Not Measured":
+            kno3_advice = "Nitrate not measured - cannot calculate KNO3 advice"
+            pineapple_advice = "Nitrate not measured - use pH and culture observation before dosing"
+        else:
+            kno3_advice = recommend_kno3(
+                nitrate=nitrate_for_ai,
+                volume_l=volume_l
+            )
 
-        pineapple_advice = recommend_pineapple(
-            avg_ph=avg_ph,
-            nitrate=nitrate,
-            volume_l=volume_l,
-            current_pineapple_dose=pineapple_dose
-        )
+            pineapple_advice = recommend_pineapple(
+                avg_ph=avg_ph,
+                nitrate=nitrate_for_ai,
+                volume_l=volume_l,
+                current_pineapple_dose=pineapple_dose
+            )
 
         co2_advice = recommend_co2(avg_ph)
 
         culture_health = classify_culture_health(
             avg_ph=avg_ph,
-            nitrate=nitrate,
+            nitrate=nitrate_for_ai,
             avg_od=avg_od,
             predicted_next_od=next_od_predicted
         )
+
+        if nitrate_status == "Not Measured":
+            culture_health = culture_health + " | Nitrate not measured"
 
         malaysia_time = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
 
@@ -440,6 +464,7 @@ def process():
             ph_vals[2],
             avg_ph,
             nitrate,
+            nitrate_status,
             pineapple_dose,
             kno3_dose,
             air_flow_rate,
@@ -477,6 +502,8 @@ def process():
             "container": container,
             "avg_ph": avg_ph,
             "avg_od": avg_od,
+            "previous_od": previous_od,
+            "nitrate_status": nitrate_status,
             "next_od_predicted": next_od_predicted,
             "kno3_advice": kno3_advice,
             "pineapple_advice": pineapple_advice,
