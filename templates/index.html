@@ -128,7 +128,7 @@
         }
 
         .metric-value {
-            font-size: 1.45rem;
+            font-size: 1.35rem;
             font-weight: 850;
             margin-top: 6px;
         }
@@ -181,7 +181,7 @@
             Algae AI Harvest Predictor
         </span>
         <span class="small-muted d-none d-md-inline">
-            Next OD750 Prediction | Pineapple Feed | KNO3 Control | Harvest Readiness
+            OD750 | Air Flow | CO₂ Control | Image-Assisted AI
         </span>
     </div>
 </nav>
@@ -194,10 +194,10 @@
 
                 <div class="mb-4">
                     <h4 class="fw-bold mb-1">Cultivation Input</h4>
-                    <div class="small-muted">Choose reactor/container and enter daily OD750 data.</div>
+                    <div class="small-muted">Enter daily OD750 data. Air, CO₂, and image are optional.</div>
                 </div>
 
-                <form id="labForm">
+                <form id="labForm" enctype="multipart/form-data">
 
                     <div class="mb-3">
                         <label>Container</label>
@@ -264,10 +264,7 @@
                                 name="other_container_liter"
                                 id="otherContainerLiterInput"
                                 class="form-control"
-                                placeholder="Example: 20">
-                            <div class="small-muted mt-1">
-                                Example: 20 means 20 L container capacity.
-                            </div>
+                                placeholder="Example: 6">
                         </div>
 
                         <div class="col-6">
@@ -283,9 +280,6 @@
                                 <option value="Tank">Tank</option>
                                 <option value="Other">Other</option>
                             </select>
-                            <div class="small-muted mt-1">
-                                Choose PBR, Open Pond, Bottle, Tank, or Other.
-                            </div>
                         </div>
                     </div>
 
@@ -380,6 +374,47 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-6">
+                            <label>Air Flow Rate L/min Optional</label>
+                            <input type="number" step="0.01" name="air_flow_rate" class="form-control" placeholder="Example: 1.5">
+                        </div>
+
+                        <div class="col-6">
+                            <label>CO₂ Status Optional</label>
+                            <select name="co2_status" class="form-select">
+                                <option value="Not Recorded">Not Recorded</option>
+                                <option value="OFF">OFF</option>
+                                <option value="ON">ON</option>
+                                <option value="Pulse">Pulse</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label>CO₂ Flow Rate L/min Optional</label>
+                            <input type="number" step="0.01" name="co2_flow_rate" class="form-control" placeholder="Example: 0.2">
+                        </div>
+
+                        <div class="col-6">
+                            <label>CO₂ Duration min Optional</label>
+                            <input type="number" step="0.01" name="co2_duration_min" class="form-control" placeholder="Example: 10">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Culture Image Optional</label>
+                        <input
+                            type="file"
+                            name="culture_image"
+                            class="form-control"
+                            accept="image/png, image/jpeg, image/jpg">
+                        <div class="small-muted mt-1">
+                            Use same lighting, distance, and background every day for better AI image features.
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
                             <label>Biomass g Optional</label>
                             <input type="number" step="0.0001" name="biomass_g" class="form-control" placeholder="Only at harvest">
                         </div>
@@ -445,7 +480,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
                         <h4 class="fw-bold mb-1">AI Decision Support</h4>
-                        <div class="small-muted">Prediction, dosing advice, and harvest recommendation.</div>
+                        <div class="small-muted">Prediction, dosing advice, CO₂ control, and image features.</div>
                     </div>
                     <span class="badge rounded-pill text-bg-secondary" id="selectedContainerBadge">No container selected</span>
                 </div>
@@ -472,10 +507,45 @@
                         </div>
                     </div>
 
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <div class="mini-card">
                             <div class="metric-label">Pineapple Advice</div>
                             <div class="metric-value text-info" id="resPineapple">--</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mini-card">
+                            <div class="metric-label">CO₂ Advice</div>
+                            <div class="metric-value text-warning" id="resCO2">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card mb-4">
+                <h4 class="fw-bold mb-1">Image Feature Result</h4>
+                <div class="small-muted mb-3">Extracted from uploaded algae culture image.</div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="mini-card">
+                            <div class="metric-label">Image Uploaded</div>
+                            <div class="metric-value" id="metricImageUploaded">--</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mini-card">
+                            <div class="metric-label">Green Index</div>
+                            <div class="metric-value text-success" id="metricGreenIndex">--</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mini-card">
+                            <div class="metric-label">Brightness</div>
+                            <div class="metric-value text-info" id="metricBrightness">--</div>
                         </div>
                     </div>
                 </div>
@@ -501,13 +571,14 @@
                                 <th>Pred OD750</th>
                                 <th>pH</th>
                                 <th>Nitrate</th>
+                                <th>CO₂</th>
                                 <th>Harvest</th>
                                 <th>Readiness</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="8" class="text-center small-muted py-4">No data loaded yet.</td>
+                                <td colspan="9" class="text-center small-muted py-4">No data loaded yet.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -649,7 +720,7 @@
         const labels = validRows.map(r => `Day ${r[3]}`);
         const avgOD = validRows.map(r => parseFloat(r[13]));
         const predictedOD = validRows.map(r => {
-            const value = parseFloat(r[21]);
+            const value = parseFloat(r[33]);
             return isNaN(value) ? null : value;
         });
 
@@ -714,7 +785,7 @@
         if (rows.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center small-muted py-4">No records yet.</td>
+                    <td colspan="9" class="text-center small-muted py-4">No records yet.</td>
                 </tr>
             `;
             return;
@@ -729,11 +800,12 @@
                 <td>${r[1] || "--"}</td>
                 <td>${r[3] || "--"}</td>
                 <td>${r[13] || "--"}</td>
-                <td>${r[21] || "--"}</td>
+                <td>${r[33] || "--"}</td>
                 <td>${r[17] || "--"}</td>
                 <td>${r[18] || "--"}</td>
-                <td>${r[24] || "--"}</td>
-                <td>${r[25] || "--"}%</td>
+                <td>${r[22] || "--"}</td>
+                <td>${r[36] || "--"}</td>
+                <td>${r[37] || "--"}%</td>
             `;
 
             tbody.appendChild(tr);
@@ -778,7 +850,12 @@
                 document.getElementById("resHarvestStatus").innerText = data.harvest_status;
                 document.getElementById("resKno3").innerText = data.kno3_advice;
                 document.getElementById("resPineapple").innerText = data.pineapple_advice;
+                document.getElementById("resCO2").innerText = data.co2_advice;
                 document.getElementById("resHealth").innerText = data.culture_health;
+
+                document.getElementById("metricImageUploaded").innerText = data.image_uploaded;
+                document.getElementById("metricGreenIndex").innerText = data.image_green_index || "--";
+                document.getElementById("metricBrightness").innerText = data.image_brightness || "--";
 
                 updateChart(data.history);
                 updateRecentTable(data.history);
