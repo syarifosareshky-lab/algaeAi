@@ -1,16 +1,20 @@
 import os
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
+from io import BytesIO
 
 import gspread
 from flask import Flask, render_template, request, jsonify
 from google.oauth2.service_account import Credentials
+from PIL import Image
 
 from model_logic import (
     train_and_predict_next_od,
     estimate_harvest_time,
     recommend_kno3,
     recommend_pineapple,
+    recommend_co2,
     classify_culture_health
 )
 
@@ -40,6 +44,18 @@ STANDARD_HEADERS = [
     "Nitrate",
     "PineappleDose",
     "KNO3Dose",
+    "AirFlowRate_L_min",
+    "CO2Status",
+    "CO2FlowRate_L_min",
+    "CO2Duration_min",
+    "ImageUploaded",
+    "ImageMeanR",
+    "ImageMeanG",
+    "ImageMeanB",
+    "ImageBrightness",
+    "ImageGreenIndex",
+    "ImageExcessGreen",
+    "ImageBrownIndex",
     "NextOD_Predicted",
     "HarvestTargetOD",
     "DaysToHarvest",
@@ -47,6 +63,7 @@ STANDARD_HEADERS = [
     "HarvestReadiness(%)",
     "KNO3_Advice",
     "Pineapple_Advice",
+    "CO2_Advice",
     "CultureHealth",
     "Biomass_g",
     "Harvested",
@@ -80,6 +97,10 @@ def get_spreadsheet():
 
 
 def ensure_header(worksheet):
+    """
+    Auto-add or auto-repair header row without deleting old data.
+    """
+
     values = worksheet.get_all_values()
 
     if not values:
@@ -88,11 +109,88 @@ def ensure_header(worksheet):
 
     current_header = values[0]
 
-    if current_header != STANDARD_HEADERS:
-        raise ValueError(
-            "Selected worksheet does not match the AI dashboard format. "
-            "Please use a clean tab like PBR_1_AI, PBR_2_AI, OPEN_1_AI, etc."
-        )
+    if current_header == STANDARD_HEADERS:
+        return
+
+    worksheet.resize(rows=max(len(values), 1000), cols=len(STANDARD_HEADERS))
+    worksheet.update("A1", [STANDARD_HEADERS])
+
+
+def optional_float(form_value):
+    """
+    Return blank if optional input is empty.
+    Otherwise return float.
+    """
+    if form_value is None or str(form_value).strip() == "":
+        return ""
+    return float(form_value)
+
+
+def numeric_or_zero(value):
+    if value == "" or value is None:
+        return 0
+    return float(value)
+
+
+def extract_image_features(image_file):
+    """
+    Extract simple RGB-based image features from uploaded algae culture image.
+
+    These are not deep learning features.
+    They are low-cost image indicators that can be used by scikit-learn models.
+    """
+
+    if not image_file or image_file.filename == "":
+        return {
+            "ImageUploaded": "No",
+            "ImageMeanR": "",
+            "ImageMeanG": "",
+            "ImageMeanB": "",
+            "ImageBrightness": "",
+            "ImageGreenIndex": "",
+            "ImageExcessGreen": "",
+            "ImageBrownIndex": ""
+        }
+
+    image_bytes = image_file.read()
+    image = Image.open(BytesIO(image_bytes)).convert("RGB")
+
+    # Resize to reduce processing load
+    image = image.resize((300, 300))
+
+    pixels = list(image.getdata())
+    total_pixels = len(pixels)
+
+    sum_r = sum(p[0] for p in pixels)
+    sum_g = sum(p[1] for p in pixels)
+    sum_b = sum(p[2] for p in pixels)
+
+    mean_r = sum_r / total_pixels
+    mean_g = sum_g / total_pixels
+    mean_b = sum_b / total_pixels
+
+    brightness = (mean_r + mean_g + mean_b) / 3
+    rgb_total = mean_r + mean_g + mean_b
+
+    if rgb_total == 0:
+        green_index = 0
+        brown_index = 0
+    else:
+        green_index = mean_g / rgb_total
+        brown_index = (mean_r + mean_g) / rgb_total
+
+    excess_green = (2 * mean_g) - mean_r - mean_b
+
+    return {
+        "ImageUploaded": "Yes",
+        "ImageMeanR": round(mean_r, 3),
+        "ImageMeanG": round(mean_g, 3),
+        "ImageMeanB": round(mean_b, 3),
+        "ImageBrightness": round(brightness, 3),
+        "ImageGreenIndex": round(green_index, 5),
+        "ImageExcessGreen": round(excess_green, 3),
+        "ImageBrownIndex": round(brown_index, 5)
+    }
 
 
 @app.route("/")
@@ -192,7 +290,6 @@ def process():
         system_type = request.form.get("system_type", "").strip()
         container_type = request.form.get("container_type", "").strip()
 
-        # Custom container type handling
         if container_type == "Other":
             other_liter = request.form.get("other_container_liter", "").strip()
             other_kind = request.form.get("other_container_kind", "").strip()
@@ -222,6 +319,11 @@ def process():
         pineapple_dose = float(request.form.get("pineapple_dose", 0))
         kno3_dose = float(request.form.get("kno3_dose", 0))
 
+        air_flow_rate = optional_float(request.form.get("air_flow_rate"))
+        co2_status = request.form.get("co2_status", "Not Recorded")
+        co2_flow_rate = optional_float(request.form.get("co2_flow_rate"))
+        co2_duration_min = optional_float(request.form.get("co2_duration_min"))
+
         harvest_target_od = float(request.form.get("harvest_target_od", 1.0))
 
         biomass_raw = request.form.get("biomass_g", "").strip()
@@ -249,6 +351,9 @@ def process():
         avg_ph = round(sum(ph_vals) / 3, 2)
         avg_od = round(sum(od_vals) / 3, 4)
 
+        image_file = request.files.get("culture_image")
+        image_features = extract_image_features(image_file)
+
         spreadsheet = get_spreadsheet()
         worksheet = spreadsheet.worksheet(container)
 
@@ -269,7 +374,18 @@ def process():
             avg_ph=avg_ph,
             nitrate=nitrate,
             pineapple_dose=pineapple_dose,
-            kno3_dose=kno3_dose
+            kno3_dose=kno3_dose,
+            air_flow_rate=air_flow_rate,
+            co2_status=co2_status,
+            co2_flow_rate=co2_flow_rate,
+            co2_duration_min=co2_duration_min,
+            image_mean_r=image_features["ImageMeanR"],
+            image_mean_g=image_features["ImageMeanG"],
+            image_mean_b=image_features["ImageMeanB"],
+            image_brightness=image_features["ImageBrightness"],
+            image_green_index=image_features["ImageGreenIndex"],
+            image_excess_green=image_features["ImageExcessGreen"],
+            image_brown_index=image_features["ImageBrownIndex"]
         )
 
         harvest_info = estimate_harvest_time(
@@ -290,6 +406,8 @@ def process():
             current_pineapple_dose=pineapple_dose
         )
 
+        co2_advice = recommend_co2(avg_ph)
+
         culture_health = classify_culture_health(
             avg_ph=avg_ph,
             nitrate=nitrate,
@@ -297,8 +415,10 @@ def process():
             predicted_next_od=next_od_predicted
         )
 
-        date_str = datetime.now().strftime("%Y-%m-%d")
-        time_str = datetime.now().strftime("%H:%M:%S")
+        malaysia_time = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
+
+        date_str = malaysia_time.strftime("%Y-%m-%d")
+        time_str = malaysia_time.strftime("%H:%M:%S")
 
         new_row = [
             container,
@@ -322,6 +442,18 @@ def process():
             nitrate,
             pineapple_dose,
             kno3_dose,
+            air_flow_rate,
+            co2_status,
+            co2_flow_rate,
+            co2_duration_min,
+            image_features["ImageUploaded"],
+            image_features["ImageMeanR"],
+            image_features["ImageMeanG"],
+            image_features["ImageMeanB"],
+            image_features["ImageBrightness"],
+            image_features["ImageGreenIndex"],
+            image_features["ImageExcessGreen"],
+            image_features["ImageBrownIndex"],
             next_od_predicted,
             harvest_target_od,
             harvest_info["days_to_harvest"],
@@ -329,6 +461,7 @@ def process():
             harvest_info["readiness_percent"],
             kno3_advice,
             pineapple_advice,
+            co2_advice,
             culture_health,
             biomass_g,
             harvested,
@@ -347,10 +480,14 @@ def process():
             "next_od_predicted": next_od_predicted,
             "kno3_advice": kno3_advice,
             "pineapple_advice": pineapple_advice,
+            "co2_advice": co2_advice,
             "culture_health": culture_health,
             "harvest_status": harvest_info["harvest_status"],
             "days_to_harvest": harvest_info["days_to_harvest"],
             "readiness_percent": harvest_info["readiness_percent"],
+            "image_uploaded": image_features["ImageUploaded"],
+            "image_green_index": image_features["ImageGreenIndex"],
+            "image_brightness": image_features["ImageBrightness"],
             "history": updated_history
         })
 
