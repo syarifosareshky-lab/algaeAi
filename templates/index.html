@@ -181,7 +181,7 @@
             Algae AI Harvest Predictor
         </span>
         <span class="small-muted d-none d-md-inline">
-            Next OD Prediction | Pineapple Feed | KNO3 Control | Harvest Readiness
+            Next OD750 Prediction | Pineapple Feed | KNO3 Control | Harvest Readiness
         </span>
     </div>
 </nav>
@@ -194,7 +194,7 @@
 
                 <div class="mb-4">
                     <h4 class="fw-bold mb-1">Cultivation Input</h4>
-                    <div class="small-muted">Choose reactor/container and enter daily data.</div>
+                    <div class="small-muted">Choose reactor/container and enter daily OD750 data.</div>
                 </div>
 
                 <form id="labForm">
@@ -226,7 +226,7 @@
                             <input type="number" name="day" class="form-control" placeholder="1" required>
                         </div>
                         <div class="col-6">
-                            <label>Target Harvest OD</label>
+                            <label>Target Harvest OD750</label>
                             <input type="number" step="0.01" name="harvest_target_od" class="form-control" value="1.00" required>
                         </div>
                     </div>
@@ -240,6 +240,7 @@
                                 <option value="Open Pond">Open Pond</option>
                             </select>
                         </div>
+
                         <div class="col-6">
                             <label>Container Type</label>
                             <select name="container_type" id="containerTypeSelect" class="form-select" required>
@@ -252,43 +253,50 @@
                                 <option value="Other">Other</option>
                             </select>
                         </div>
-                        <div class="row g-3 mb-3 d-none" id="otherContainerTypeBox">
-    <div class="col-6">
-        <label>Custom Liter / Capacity</label>
-        <input 
-            type="number" 
-            step="0.01" 
-            name="other_container_liter" 
-            id="otherContainerLiterInput" 
-            class="form-control" 
-            placeholder="Example: 20">
-    </div>
+                    </div>
 
-    <div class="col-6">
-        <label>Custom Type</label>
-        <select 
-            name="other_container_kind" 
-            id="otherContainerKindSelect" 
-            class="form-select">
-            <option value="">Choose...</option>
-            <option value="PBR">PBR</option>
-            <option value="Open Pond">Open Pond</option>
-            <option value="Bottle">Bottle</option>
-            <option value="Tank">Tank</option>
-            <option value="Other">Other</option>
-        </select>
-    </div>
-</div>
+                    <div class="row g-3 mb-3 d-none" id="otherContainerTypeBox">
+                        <div class="col-6">
+                            <label>Custom Liter / Capacity</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                name="other_container_liter"
+                                id="otherContainerLiterInput"
+                                class="form-control"
+                                placeholder="Example: 20">
+                            <div class="small-muted mt-1">
+                                Example: 20 means 20 L container capacity.
+                            </div>
+                        </div>
 
-<div class="mb-3 d-none" id="otherContainerKindTextBox">
-    <label>Custom Type Name</label>
-    <input 
-        type="text" 
-        name="other_container_kind_text" 
-        id="otherContainerKindTextInput" 
-        class="form-control" 
-        placeholder="Example: Acrylic reactor, glass tank, custom pond">
-</div>
+                        <div class="col-6">
+                            <label>Custom Container Kind</label>
+                            <select
+                                name="other_container_kind"
+                                id="otherContainerKindSelect"
+                                class="form-select">
+                                <option value="">Choose...</option>
+                                <option value="PBR">PBR</option>
+                                <option value="Open Pond">Open Pond</option>
+                                <option value="Bottle">Bottle</option>
+                                <option value="Tank">Tank</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <div class="small-muted mt-1">
+                                Choose PBR, Open Pond, Bottle, Tank, or Other.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 d-none" id="otherContainerKindTextBox">
+                        <label>Custom Type Name</label>
+                        <input
+                            type="text"
+                            name="other_container_kind_text"
+                            id="otherContainerKindTextInput"
+                            class="form-control"
+                            placeholder="Example: Acrylic reactor, glass tank, custom pond">
                     </div>
 
                     <div class="mb-3">
@@ -307,7 +315,7 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label>Volume L</label>
+                            <label>Working Volume L</label>
                             <input type="number" step="0.01" name="volume_l" class="form-control" value="10" required>
                         </div>
                         <div class="col-6">
@@ -318,8 +326,8 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label>Previous OD</label>
-                            <input type="number" step="0.0001" name="previous_od" class="form-control" placeholder="Yesterday OD" required>
+                            <label>Previous OD750</label>
+                            <input type="number" step="0.0001" name="previous_od" class="form-control" placeholder="Yesterday OD750" required>
                         </div>
                         <div class="col-6">
                             <label>Nitrate ppm</label>
@@ -328,19 +336,19 @@
                     </div>
 
                     <div class="mb-3">
-                        <label>OD Readings 750 nm</label>
+                        <label>OD750 Readings</label>
                         <div class="row g-2">
                             <div class="col-4">
-                                <input type="number" step="0.0001" name="od1" class="form-control od-input" placeholder="OD1" required>
+                                <input type="number" step="0.0001" name="od1" class="form-control od-input" placeholder="OD750 1" required>
                             </div>
                             <div class="col-4">
-                                <input type="number" step="0.0001" name="od2" class="form-control od-input" placeholder="OD2" required>
+                                <input type="number" step="0.0001" name="od2" class="form-control od-input" placeholder="OD750 2" required>
                             </div>
                             <div class="col-4">
-                                <input type="number" step="0.0001" name="od3" class="form-control od-input" placeholder="OD3" required>
+                                <input type="number" step="0.0001" name="od3" class="form-control od-input" placeholder="OD750 3" required>
                             </div>
                         </div>
-                        <span class="avg-pill">Mean OD: <strong id="odAvg">--</strong></span>
+                        <span class="avg-pill">Mean OD750: <strong id="odAvg">--</strong></span>
                     </div>
 
                     <div class="mb-3">
@@ -390,7 +398,7 @@
                     </div>
 
                     <button type="submit" class="btn btn-ai w-100">
-                        Predict OD & Harvest Time
+                        Predict OD750 & Harvest Time
                     </button>
 
                 </form>
@@ -406,14 +414,14 @@
             <div class="row g-3 mb-4">
                 <div class="col-md-3 col-6">
                     <div class="mini-card">
-                        <div class="metric-label">Average OD</div>
+                        <div class="metric-label">Average OD750</div>
                         <div class="metric-value" id="metricOD">--</div>
                     </div>
                 </div>
 
                 <div class="col-md-3 col-6">
                     <div class="mini-card">
-                        <div class="metric-label">Predicted Next OD</div>
+                        <div class="metric-label">Predicted Next OD750</div>
                         <div class="metric-value text-success" id="metricNextOD">--</div>
                     </div>
                 </div>
@@ -474,8 +482,8 @@
             </div>
 
             <div class="dashboard-card mb-4">
-                <h4 class="fw-bold mb-1">OD Growth Trend</h4>
-                <div class="small-muted mb-3">Average OD and predicted OD trend.</div>
+                <h4 class="fw-bold mb-1">OD750 Growth Trend</h4>
+                <div class="small-muted mb-3">Average OD750 and predicted OD750 trend.</div>
                 <canvas id="growthChart"></canvas>
             </div>
 
@@ -489,8 +497,8 @@
                             <tr>
                                 <th>Date</th>
                                 <th>Day</th>
-                                <th>AvgOD</th>
-                                <th>Pred OD</th>
+                                <th>AvgOD750</th>
+                                <th>Pred OD750</th>
                                 <th>pH</th>
                                 <th>Nitrate</th>
                                 <th>Harvest</th>
@@ -657,7 +665,7 @@
                 labels: labels,
                 datasets: [
                     {
-                        label: "Average OD",
+                        label: "Average OD750",
                         data: avgOD,
                         borderColor: "#10b981",
                         backgroundColor: "rgba(16,185,129,0.12)",
@@ -666,7 +674,7 @@
                         pointRadius: 4
                     },
                     {
-                        label: "Predicted Next OD",
+                        label: "Predicted Next OD750",
                         data: predictedOD,
                         borderColor: "#38bdf8",
                         backgroundColor: "rgba(56,189,248,0.08)",
@@ -782,9 +790,47 @@
             showError("Submit failed: " + err.message);
         }
 
-        button.innerText = "Predict OD & Harvest Time";
+        button.innerText = "Predict OD750 & Harvest Time";
         button.disabled = false;
         form.classList.remove("loading");
+    });
+
+    const containerTypeSelect = document.getElementById("containerTypeSelect");
+    const otherContainerTypeBox = document.getElementById("otherContainerTypeBox");
+    const otherContainerLiterInput = document.getElementById("otherContainerLiterInput");
+    const otherContainerKindSelect = document.getElementById("otherContainerKindSelect");
+    const otherContainerKindTextBox = document.getElementById("otherContainerKindTextBox");
+    const otherContainerKindTextInput = document.getElementById("otherContainerKindTextInput");
+
+    containerTypeSelect.addEventListener("change", function () {
+        if (this.value === "Other") {
+            otherContainerTypeBox.classList.remove("d-none");
+
+            otherContainerLiterInput.required = true;
+            otherContainerKindSelect.required = true;
+        } else {
+            otherContainerTypeBox.classList.add("d-none");
+            otherContainerKindTextBox.classList.add("d-none");
+
+            otherContainerLiterInput.required = false;
+            otherContainerKindSelect.required = false;
+            otherContainerKindTextInput.required = false;
+
+            otherContainerLiterInput.value = "";
+            otherContainerKindSelect.value = "";
+            otherContainerKindTextInput.value = "";
+        }
+    });
+
+    otherContainerKindSelect.addEventListener("change", function () {
+        if (this.value === "Other") {
+            otherContainerKindTextBox.classList.remove("d-none");
+            otherContainerKindTextInput.required = true;
+        } else {
+            otherContainerKindTextBox.classList.add("d-none");
+            otherContainerKindTextInput.required = false;
+            otherContainerKindTextInput.value = "";
+        }
     });
 
     loadContainers();
