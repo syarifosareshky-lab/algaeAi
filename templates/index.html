@@ -242,7 +242,7 @@
                         </div>
                         <div class="col-6">
                             <label>Container Type</label>
-                            <select name="container_type" class="form-select" required>
+                            <select name="container_type" id="containerTypeSelect" class="form-select" required>
                                 <option value="">Choose...</option>
                                 <option value="5L PBR">5L PBR</option>
                                 <option value="10L PBR">10L PBR</option>
@@ -252,6 +252,43 @@
                                 <option value="Other">Other</option>
                             </select>
                         </div>
+                        <div class="row g-3 mb-3 d-none" id="otherContainerTypeBox">
+    <div class="col-6">
+        <label>Custom Liter / Capacity</label>
+        <input 
+            type="number" 
+            step="0.01" 
+            name="other_container_liter" 
+            id="otherContainerLiterInput" 
+            class="form-control" 
+            placeholder="Example: 20">
+    </div>
+
+    <div class="col-6">
+        <label>Custom Type</label>
+        <select 
+            name="other_container_kind" 
+            id="otherContainerKindSelect" 
+            class="form-select">
+            <option value="">Choose...</option>
+            <option value="PBR">PBR</option>
+            <option value="Open Pond">Open Pond</option>
+            <option value="Bottle">Bottle</option>
+            <option value="Tank">Tank</option>
+            <option value="Other">Other</option>
+        </select>
+    </div>
+</div>
+
+<div class="mb-3 d-none" id="otherContainerKindTextBox">
+    <label>Custom Type Name</label>
+    <input 
+        type="text" 
+        name="other_container_kind_text" 
+        id="otherContainerKindTextInput" 
+        class="form-control" 
+        placeholder="Example: Acrylic reactor, glass tank, custom pond">
+</div>
                     </div>
 
                     <div class="mb-3">
