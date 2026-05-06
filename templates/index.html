@@ -128,9 +128,10 @@
         }
 
         .metric-value {
-            font-size: 1.35rem;
+            font-size: 1.3rem;
             font-weight: 850;
             margin-top: 6px;
+            word-break: break-word;
         }
 
         .small-muted {
@@ -162,7 +163,7 @@
         }
 
         canvas {
-            max-height: 340px;
+            max-height: 320px;
         }
 
         .loading {
@@ -181,7 +182,7 @@
             Algae AI Harvest Predictor
         </span>
         <span class="small-muted d-none d-md-inline">
-            OD750 | Air Flow | CO₂ Control | Image-Assisted AI
+            OD750 | Auto Previous OD | pH | Nitrate | Dosing | CO₂ | Image AI
         </span>
     </div>
 </nav>
@@ -194,7 +195,7 @@
 
                 <div class="mb-4">
                     <h4 class="fw-bold mb-1">Cultivation Input</h4>
-                    <div class="small-muted">Enter daily OD750 data. Air, CO₂, and image are optional.</div>
+                    <div class="small-muted">Previous OD750 is automatically taken from the last saved record.</div>
                 </div>
 
                 <form id="labForm" enctype="multipart/form-data">
@@ -258,21 +259,12 @@
                     <div class="row g-3 mb-3 d-none" id="otherContainerTypeBox">
                         <div class="col-6">
                             <label>Custom Liter / Capacity</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                name="other_container_liter"
-                                id="otherContainerLiterInput"
-                                class="form-control"
-                                placeholder="Example: 6">
+                            <input type="number" step="0.01" name="other_container_liter" id="otherContainerLiterInput" class="form-control" placeholder="Example: 6">
                         </div>
 
                         <div class="col-6">
                             <label>Custom Container Kind</label>
-                            <select
-                                name="other_container_kind"
-                                id="otherContainerKindSelect"
-                                class="form-select">
+                            <select name="other_container_kind" id="otherContainerKindSelect" class="form-select">
                                 <option value="">Choose...</option>
                                 <option value="PBR">PBR</option>
                                 <option value="Open Pond">Open Pond</option>
@@ -285,12 +277,7 @@
 
                     <div class="mb-3 d-none" id="otherContainerKindTextBox">
                         <label>Custom Type Name</label>
-                        <input
-                            type="text"
-                            name="other_container_kind_text"
-                            id="otherContainerKindTextInput"
-                            class="form-control"
-                            placeholder="Example: Acrylic reactor, glass tank, custom pond">
+                        <input type="text" name="other_container_kind_text" id="otherContainerKindTextInput" class="form-control" placeholder="Example: Acrylic reactor, glass tank, custom pond">
                     </div>
 
                     <div class="mb-3">
@@ -320,13 +307,19 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label>Previous OD750</label>
-                            <input type="number" step="0.0001" name="previous_od" class="form-control" placeholder="Yesterday OD750" required>
+                            <label>Nitrate Status</label>
+                            <select name="nitrate_status" id="nitrateStatusSelect" class="form-select">
+                                <option value="Measured">Measured</option>
+                                <option value="Not Measured">Not Measured</option>
+                            </select>
                         </div>
                         <div class="col-6">
-                            <label>Nitrate ppm</label>
-                            <input type="number" step="0.01" name="nitrate" class="form-control" placeholder="80" required>
+                            <label>Nitrate ppm Optional</label>
+                            <input type="number" step="0.01" name="nitrate" id="nitrateInput" class="form-control" placeholder="Blank if not measured">
                         </div>
+                    </div>
+                    <div class="small-muted mb-3">
+                        Do not enter 0 unless nitrate was truly measured as 0 ppm.
                     </div>
 
                     <div class="mb-3">
@@ -403,11 +396,7 @@
 
                     <div class="mb-3">
                         <label>Culture Image Optional</label>
-                        <input
-                            type="file"
-                            name="culture_image"
-                            class="form-control"
-                            accept="image/png, image/jpeg, image/jpg">
+                        <input type="file" name="culture_image" class="form-control" accept="image/png, image/jpeg, image/jpg">
                         <div class="small-muted mt-1">
                             Use same lighting, distance, and background every day for better AI image features.
                         </div>
@@ -429,7 +418,7 @@
 
                     <div class="mb-4">
                         <label>Notes</label>
-                        <textarea name="notes" class="form-control" rows="2" placeholder="Rain, contamination, brown sludge, color change, etc."></textarea>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Rain, contamination, nitrate not measured, color change, etc."></textarea>
                     </div>
 
                     <button type="submit" class="btn btn-ai w-100">
@@ -456,15 +445,15 @@
 
                 <div class="col-md-3 col-6">
                     <div class="mini-card">
-                        <div class="metric-label">Predicted Next OD750</div>
-                        <div class="metric-value text-success" id="metricNextOD">--</div>
+                        <div class="metric-label">Previous OD750 Auto</div>
+                        <div class="metric-value text-info" id="metricPreviousOD">--</div>
                     </div>
                 </div>
 
                 <div class="col-md-3 col-6">
                     <div class="mini-card">
-                        <div class="metric-label">Days to Harvest</div>
-                        <div class="metric-value text-info" id="metricHarvestDays">--</div>
+                        <div class="metric-label">Predicted Next OD750</div>
+                        <div class="metric-value text-success" id="metricNextOD">--</div>
                     </div>
                 </div>
 
@@ -480,7 +469,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
                         <h4 class="fw-bold mb-1">AI Decision Support</h4>
-                        <div class="small-muted">Prediction, dosing advice, CO₂ control, and image features.</div>
+                        <div class="small-muted">Prediction, dosing advice, CO₂ control, and harvest recommendation.</div>
                     </div>
                     <span class="badge rounded-pill text-bg-secondary" id="selectedContainerBadge">No container selected</span>
                 </div>
@@ -488,8 +477,22 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <div class="mini-card">
+                            <div class="metric-label">Days to Harvest</div>
+                            <div class="metric-value text-info" id="metricHarvestDays">--</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mini-card">
                             <div class="metric-label">Harvest Status</div>
                             <div class="metric-value text-warning" id="resHarvestStatus">--</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mini-card">
+                            <div class="metric-label">Culture Health</div>
+                            <div class="metric-value text-info" id="resHealth">--</div>
                         </div>
                     </div>
 
@@ -502,19 +505,12 @@
 
                     <div class="col-md-4">
                         <div class="mini-card">
-                            <div class="metric-label">Culture Health</div>
-                            <div class="metric-value text-info" id="resHealth">--</div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="mini-card">
                             <div class="metric-label">Pineapple Advice</div>
                             <div class="metric-value text-info" id="resPineapple">--</div>
                         </div>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="mini-card">
                             <div class="metric-label">CO₂ Advice</div>
                             <div class="metric-value text-warning" id="resCO2">--</div>
@@ -524,10 +520,51 @@
             </div>
 
             <div class="dashboard-card mb-4">
-                <h4 class="fw-bold mb-1">Image Feature Result</h4>
-                <div class="small-muted mb-3">Extracted from uploaded algae culture image.</div>
+                <h4 class="fw-bold mb-1">OD750 Actual vs Predicted</h4>
+                <div class="small-muted mb-3">Main AI prediction graph.</div>
+                <canvas id="odChart"></canvas>
+            </div>
 
-                <div class="row g-3">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="dashboard-card">
+                        <h4 class="fw-bold mb-1">pH Trend</h4>
+                        <div class="small-muted mb-3">Culture acidity/alkalinity monitoring.</div>
+                        <canvas id="phChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="dashboard-card">
+                        <h4 class="fw-bold mb-1">Nitrate Trend</h4>
+                        <div class="small-muted mb-3">Blank when nitrate was not measured.</div>
+                        <canvas id="nitrateChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="dashboard-card">
+                        <h4 class="fw-bold mb-1">Dose History</h4>
+                        <div class="small-muted mb-3">Pineapple and KNO3 dosing.</div>
+                        <canvas id="doseChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="dashboard-card">
+                        <h4 class="fw-bold mb-1">Harvest Readiness</h4>
+                        <div class="small-muted mb-3">Readiness percentage toward target OD750.</div>
+                        <canvas id="readinessChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card mb-4">
+                <h4 class="fw-bold mb-1">Image Feature Trend</h4>
+                <div class="small-muted mb-3">Green index and brightness from uploaded images.</div>
+                <div class="row g-3 mb-3">
                     <div class="col-md-4">
                         <div class="mini-card">
                             <div class="metric-label">Image Uploaded</div>
@@ -549,12 +586,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="dashboard-card mb-4">
-                <h4 class="fw-bold mb-1">OD750 Growth Trend</h4>
-                <div class="small-muted mb-3">Average OD750 and predicted OD750 trend.</div>
-                <canvas id="growthChart"></canvas>
+                <canvas id="imageChart"></canvas>
             </div>
 
             <div class="dashboard-card">
@@ -571,6 +603,7 @@
                                 <th>Pred OD750</th>
                                 <th>pH</th>
                                 <th>Nitrate</th>
+                                <th>Nitrate Status</th>
                                 <th>CO₂</th>
                                 <th>Harvest</th>
                                 <th>Readiness</th>
@@ -578,7 +611,7 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="9" class="text-center small-muted py-4">No data loaded yet.</td>
+                                <td colspan="10" class="text-center small-muted py-4">No data loaded yet.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -591,7 +624,7 @@
 </div>
 
 <script>
-    let growthChart = null;
+    let charts = {};
 
     function showError(message) {
         document.getElementById("errorBox").innerText = message;
@@ -626,6 +659,18 @@
 
     document.querySelectorAll(".ph-input").forEach(input => {
         input.addEventListener("input", () => calculateAverage(".ph-input", "phAvg", 2));
+    });
+
+    const nitrateStatusSelect = document.getElementById("nitrateStatusSelect");
+    const nitrateInput = document.getElementById("nitrateInput");
+
+    nitrateStatusSelect.addEventListener("change", function () {
+        if (this.value === "Not Measured") {
+            nitrateInput.value = "";
+            nitrateInput.disabled = true;
+        } else {
+            nitrateInput.disabled = false;
+        }
     });
 
     async function loadContainers() {
@@ -701,7 +746,7 @@
             const data = await res.json();
 
             if (data.status === "success") {
-                updateChart(data.history);
+                updateAllCharts(data.history);
                 updateRecentTable(data.history);
             } else {
                 showError(data.message);
@@ -712,56 +757,31 @@
         }
     }
 
-    function updateChart(history) {
-        const rows = history.slice(1);
+    function parseValue(value) {
+        const num = parseFloat(value);
+        return isNaN(num) ? null : num;
+    }
 
-        const validRows = rows.filter(r => !isNaN(parseFloat(r[13])));
-
-        const labels = validRows.map(r => `Day ${r[3]}`);
-        const avgOD = validRows.map(r => parseFloat(r[13]));
-        const predictedOD = validRows.map(r => {
-            const value = parseFloat(r[33]);
-            return isNaN(value) ? null : value;
-        });
-
-        if (growthChart) {
-            growthChart.destroy();
+    function destroyChart(id) {
+        if (charts[id]) {
+            charts[id].destroy();
         }
+    }
 
-        const ctx = document.getElementById("growthChart");
+    function createLineChart(id, labels, datasets) {
+        destroyChart(id);
 
-        growthChart = new Chart(ctx, {
+        charts[id] = new Chart(document.getElementById(id), {
             type: "line",
             data: {
                 labels: labels,
-                datasets: [
-                    {
-                        label: "Average OD750",
-                        data: avgOD,
-                        borderColor: "#10b981",
-                        backgroundColor: "rgba(16,185,129,0.12)",
-                        fill: true,
-                        tension: 0.35,
-                        pointRadius: 4
-                    },
-                    {
-                        label: "Predicted Next OD750",
-                        data: predictedOD,
-                        borderColor: "#38bdf8",
-                        backgroundColor: "rgba(56,189,248,0.08)",
-                        fill: false,
-                        tension: 0.35,
-                        pointRadius: 4
-                    }
-                ]
+                datasets: datasets
             },
             options: {
                 responsive: true,
                 plugins: {
                     legend: {
-                        labels: {
-                            color: "#e7f7f4"
-                        }
+                        labels: { color: "#e7f7f4" }
                     }
                 },
                 scales: {
@@ -778,6 +798,137 @@
         });
     }
 
+    function createBarChart(id, labels, datasets) {
+        destroyChart(id);
+
+        charts[id] = new Chart(document.getElementById(id), {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: "#e7f7f4" }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#8ba7a2" },
+                        grid: { color: "rgba(139,167,162,0.08)" }
+                    },
+                    y: {
+                        ticks: { color: "#8ba7a2" },
+                        grid: { color: "rgba(139,167,162,0.08)" }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateAllCharts(history) {
+        const rows = history.slice(1);
+        const validRows = rows.filter(r => r.length > 13 && r[3]);
+
+        const labels = validRows.map(r => `Day ${r[3]}`);
+
+        const avgOD = validRows.map(r => parseValue(r[13]));
+        const predictedOD = validRows.map(r => parseValue(r[34]));
+        const ph = validRows.map(r => parseValue(r[17]));
+        const nitrate = validRows.map(r => parseValue(r[18]));
+        const pineapple = validRows.map(r => parseValue(r[20]) || 0);
+        const kno3 = validRows.map(r => parseValue(r[21]) || 0);
+        const readiness = validRows.map(r => parseValue(r[38]));
+        const greenIndex = validRows.map(r => parseValue(r[31]));
+        const brightness = validRows.map(r => parseValue(r[30]));
+
+        createLineChart("odChart", labels, [
+            {
+                label: "Actual AvgOD750",
+                data: avgOD,
+                borderColor: "#10b981",
+                backgroundColor: "rgba(16,185,129,0.12)",
+                fill: true,
+                tension: 0.35
+            },
+            {
+                label: "Predicted Next OD750",
+                data: predictedOD,
+                borderColor: "#38bdf8",
+                backgroundColor: "rgba(56,189,248,0.08)",
+                fill: false,
+                tension: 0.35
+            }
+        ]);
+
+        createLineChart("phChart", labels, [
+            {
+                label: "Avg pH",
+                data: ph,
+                borderColor: "#facc15",
+                backgroundColor: "rgba(250,204,21,0.10)",
+                fill: true,
+                tension: 0.35
+            }
+        ]);
+
+        createLineChart("nitrateChart", labels, [
+            {
+                label: "Nitrate ppm",
+                data: nitrate,
+                borderColor: "#38bdf8",
+                backgroundColor: "rgba(56,189,248,0.10)",
+                fill: true,
+                tension: 0.35
+            }
+        ]);
+
+        createBarChart("doseChart", labels, [
+            {
+                label: "Pineapple Dose ml",
+                data: pineapple,
+                backgroundColor: "rgba(16,185,129,0.55)"
+            },
+            {
+                label: "KNO3 Dose ml",
+                data: kno3,
+                backgroundColor: "rgba(56,189,248,0.55)"
+            }
+        ]);
+
+        createLineChart("readinessChart", labels, [
+            {
+                label: "Harvest Readiness %",
+                data: readiness,
+                borderColor: "#ef4444",
+                backgroundColor: "rgba(239,68,68,0.10)",
+                fill: true,
+                tension: 0.35
+            }
+        ]);
+
+        createLineChart("imageChart", labels, [
+            {
+                label: "Green Index",
+                data: greenIndex,
+                borderColor: "#10b981",
+                backgroundColor: "rgba(16,185,129,0.10)",
+                fill: false,
+                tension: 0.35
+            },
+            {
+                label: "Brightness",
+                data: brightness,
+                borderColor: "#38bdf8",
+                backgroundColor: "rgba(56,189,248,0.10)",
+                fill: false,
+                tension: 0.35
+            }
+        ]);
+    }
+
     function updateRecentTable(history) {
         const tbody = document.querySelector("#recentTable tbody");
         const rows = history.slice(1).slice(-8).reverse();
@@ -785,7 +936,7 @@
         if (rows.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-center small-muted py-4">No records yet.</td>
+                    <td colspan="10" class="text-center small-muted py-4">No records yet.</td>
                 </tr>
             `;
             return;
@@ -800,12 +951,13 @@
                 <td>${r[1] || "--"}</td>
                 <td>${r[3] || "--"}</td>
                 <td>${r[13] || "--"}</td>
-                <td>${r[33] || "--"}</td>
+                <td>${r[34] || "--"}</td>
                 <td>${r[17] || "--"}</td>
                 <td>${r[18] || "--"}</td>
-                <td>${r[22] || "--"}</td>
-                <td>${r[36] || "--"}</td>
-                <td>${r[37] || "--"}%</td>
+                <td>${r[19] || "--"}</td>
+                <td>${r[23] || "--"}</td>
+                <td>${r[37] || "--"}</td>
+                <td>${r[38] || "--"}%</td>
             `;
 
             tbody.appendChild(tr);
@@ -843,6 +995,7 @@
                 document.getElementById("selectedContainerBadge").innerText = data.container;
 
                 document.getElementById("metricOD").innerText = data.avg_od;
+                document.getElementById("metricPreviousOD").innerText = data.previous_od;
                 document.getElementById("metricNextOD").innerText = data.next_od_predicted;
                 document.getElementById("metricHarvestDays").innerText = data.days_to_harvest;
                 document.getElementById("metricReadiness").innerText = data.readiness_percent + "%";
@@ -857,7 +1010,7 @@
                 document.getElementById("metricGreenIndex").innerText = data.image_green_index || "--";
                 document.getElementById("metricBrightness").innerText = data.image_brightness || "--";
 
-                updateChart(data.history);
+                updateAllCharts(data.history);
                 updateRecentTable(data.history);
             } else {
                 showError(data.message);
