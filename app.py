@@ -188,8 +188,29 @@ def process():
             raise ValueError("Please select a container.")
 
         day = int(float(request.form.get("day")))
+
         system_type = request.form.get("system_type", "").strip()
         container_type = request.form.get("container_type", "").strip()
+
+        # Custom container type handling
+        if container_type == "Other":
+            other_liter = request.form.get("other_container_liter", "").strip()
+            other_kind = request.form.get("other_container_kind", "").strip()
+            other_kind_text = request.form.get("other_container_kind_text", "").strip()
+
+            if not other_liter:
+                raise ValueError("Please enter the custom container liter/capacity.")
+
+            if not other_kind:
+                raise ValueError("Please choose the custom container type.")
+
+            if other_kind == "Other":
+                if not other_kind_text:
+                    raise ValueError("Please enter the custom container type name.")
+                other_kind = other_kind_text
+
+            container_type = f"{other_liter}L {other_kind}"
+
         culture_condition = request.form.get("culture_condition", "").strip()
 
         volume_l = float(request.form.get("volume_l"))
@@ -220,7 +241,7 @@ def process():
                 raise ValueError(f"pH reading {i} is missing.")
 
             if od_value is None or od_value == "":
-                raise ValueError(f"OD reading {i} is missing.")
+                raise ValueError(f"OD750 reading {i} is missing.")
 
             ph_vals.append(float(ph_value))
             od_vals.append(float(od_value))
