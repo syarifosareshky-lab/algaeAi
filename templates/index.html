@@ -2,154 +2,1221 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>Algae AI Harvest Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desmodesmus AI Optimizer</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        :root { --bg: #0b0f0f; --card: #151d1d; --border: #263636; --green: #10b981; --blue: #3b82f6; }
-        body { background: var(--bg); color: #e2e8f0; font-family: sans-serif; }
-        .card-custom { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .form-control { background: #0b0f0f; border: 1px solid var(--border); color: white; }
-        .form-control:focus { background: #0b0f0f; color: white; border-color: var(--green); box-shadow: none; }
-        .btn-ai { background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold; padding: 15px; }
-        .result-box { border-left: 5px solid var(--green); background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 12px; }
-        .avg-label { font-size: 0.8rem; color: #64748b; }
+        :root {
+            --bg: #061112;
+            --panel: #101f22;
+            --panel2: #14272b;
+            --border: #254449;
+            --green: #10b981;
+            --blue: #38bdf8;
+            --yellow: #facc15;
+            --red: #ef4444;
+            --text: #e7f7f4;
+            --muted: #8ba7a2;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(16,185,129,0.17), transparent 34%),
+                radial-gradient(circle at top right, rgba(56,189,248,0.13), transparent 34%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .topbar {
+            background: rgba(6, 17, 18, 0.88);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(15px);
+        }
+
+        .brand-dot {
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, var(--green), var(--blue));
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .dashboard-card {
+            background: linear-gradient(180deg, rgba(20,39,43,0.96), rgba(16,31,34,0.97));
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 24px;
+            box-shadow: 0 22px 55px rgba(0,0,0,0.36);
+        }
+
+        .mini-card {
+            background: rgba(6, 17, 18, 0.62);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 17px;
+            height: 100%;
+        }
+
+        .decision-ready {
+            border-color: rgba(16,185,129,0.65);
+            box-shadow: 0 0 0 1px rgba(16,185,129,0.15), 0 18px 40px rgba(16,185,129,0.08);
+        }
+
+        .decision-warning {
+            border-color: rgba(250,204,21,0.60);
+        }
+
+        .decision-critical {
+            border-color: rgba(239,68,68,0.68);
+            box-shadow: 0 0 0 1px rgba(239,68,68,0.12), 0 18px 40px rgba(239,68,68,0.08);
+        }
+
+        label {
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 7px;
+        }
+
+        .form-control,
+        .form-select {
+            background-color: #061112;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background-color: #061112;
+            color: white;
+            border-color: var(--green);
+            box-shadow: 0 0 0 0.2rem rgba(16,185,129,0.15);
+        }
+
+        .form-control::placeholder {
+            color: #5d7672;
+        }
+
+        .btn-ai {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: white;
+            border-radius: 14px;
+            padding: 14px;
+            font-weight: 800;
+        }
+
+        .btn-ai:hover {
+            background: linear-gradient(135deg, #34d399, #10b981);
+            color: white;
+        }
+
+        .btn-outline-ai {
+            border: 1px solid var(--green);
+            color: #34d399;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .btn-outline-ai:hover {
+            background: rgba(16,185,129,0.12);
+            color: white;
+        }
+
+        .metric-label {
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .metric-value {
+            font-size: 1.3rem;
+            font-weight: 850;
+            margin-top: 6px;
+            word-break: break-word;
+        }
+
+        .small-muted {
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .avg-pill {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(16,185,129,0.10);
+            border: 1px solid rgba(16,185,129,0.25);
+            color: #34d399;
+            font-size: 0.78rem;
+        }
+
+        .table {
+            --bs-table-bg: transparent;
+            --bs-table-color: var(--text);
+            --bs-table-border-color: var(--border);
+        }
+
+        .table thead th {
+            color: var(--muted);
+            font-size: 0.73rem;
+            text-transform: uppercase;
+        }
+
+        canvas {
+            max-height: 320px;
+        }
+
+        .loading {
+            opacity: 0.62;
+            pointer-events: none;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="container py-5">
-    <header class="text-center mb-5">
-        <h1 class="fw-bold text-success text-uppercase">Algae AI Decision Support</h1>
-        <p class="text-secondary">Precision Carbon & Nutrient Optimization Framework</p>
-    </header>
+<nav class="navbar topbar sticky-top">
+    <div class="container-fluid px-4">
+        <span class="navbar-brand text-white fw-bold">
+            <span class="brand-dot"></span>
+            Algae AI Harvest Predictor
+        </span>
+        <span class="small-muted d-none d-md-inline">
+            OD750 | Auto Previous OD | pH | Nitrate | Dosing | CO₂ | Image AI
+        </span>
+    </div>
+</nav>
 
+<div class="container-fluid px-4 py-4">
     <div class="row g-4">
-        <div class="col-lg-5">
-            <div class="card-custom">
-                <form id="labForm">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">TAB NAME (CONTAINER ID)</label>
-                        <input type="text" name="container" class="form-control" placeholder="Bio_A" required>
-                    </div>
+
+        <div class="col-xl-4 col-lg-5">
+            <div class="dashboard-card">
+
+                <div class="mb-4">
+                    <h4 class="fw-bold mb-1">Cultivation Input</h4>
+                    <div class="small-muted">Previous OD750 is automatically taken from the last saved record.</div>
+                </div>
+
+                <form id="labForm" enctype="multipart/form-data">
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-info">pH READINGS (TRIPLICATE)</label>
+                        <label>Container</label>
                         <div class="d-flex gap-2">
-                            <input type="number" step="0.01" name="ph1" class="form-control ph-in" placeholder="1" required>
-                            <input type="number" step="0.01" name="ph2" class="form-control ph-in" placeholder="2" required>
-                            <input type="number" step="0.01" name="ph3" class="form-control ph-in" placeholder="3" required>
+                            <select name="container" id="containerSelect" class="form-select" required>
+                                <option value="">Loading...</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-ai" onclick="loadContainers()">Refresh</button>
                         </div>
-                        <div class="avg-label mt-1">Mean pH: <span id="phAvg" class="text-white">--</span></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label>Create New Container</label>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <input type="text" id="newContainerName" class="form-control" placeholder="PBR_1 or OPEN_1">
+                            </div>
+                            <div class="col-12">
+                                <input type="date" id="newCultureStartDate" class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <button type="button" class="btn btn-outline-ai w-100" onclick="createContainer()">Create Container + Save Day 1 Date</button>
+                            </div>
+                        </div>
+                        <div class="small-muted mt-2">
+                            The date is the first day you cultured the experiment. It becomes Day 1 for that container.
+                        </div>
+                    </div>
+
+                    <hr style="border-color: var(--border);">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label>Date Data Taken</label>
+                            <input type="date" name="data_collection_date" id="dataCollectionDate" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label>Auto Culture Day</label>
+                            <input type="text" id="autoCultureDayPreview" class="form-control" value="Select container and date" readonly>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label>Saved Culture Start Date / Day 1</label>
+                            <input type="date" name="culture_start_date_existing" id="cultureStartDateExisting" class="form-control">
+                            <div class="small-muted mt-1" id="cultureStartDateHelp">
+                                For older containers, enter this once only. It will be saved automatically.
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label>Target Harvest OD750</label>
+                            <input type="number" step="0.01" name="harvest_target_od" class="form-control" value="1.00" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label>System Type</label>
+                            <select name="system_type" class="form-select" required>
+                                <option value="">Choose...</option>
+                                <option value="Photobioreactor">Photobioreactor</option>
+                                <option value="Open Pond">Open Pond</option>
+                            </select>
+                        </div>
+
+                        <div class="col-6">
+                            <label>Container Type</label>
+                            <select name="container_type" id="containerTypeSelect" class="form-select" required>
+                                <option value="">Choose...</option>
+                                <option value="5L PBR">5L PBR</option>
+                                <option value="10L PBR">10L PBR</option>
+                                <option value="15L PBR">15L PBR</option>
+                                <option value="10L Open Pond">10L Open Pond</option>
+                                <option value="15L Open Pond">15L Open Pond</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3 d-none" id="otherContainerTypeBox">
+                        <div class="col-6">
+                            <label>Custom Liter / Capacity</label>
+                            <input type="number" step="0.01" name="other_container_liter" id="otherContainerLiterInput" class="form-control" placeholder="Example: 6">
+                        </div>
+
+                        <div class="col-6">
+                            <label>Custom Container Kind</label>
+                            <select name="other_container_kind" id="otherContainerKindSelect" class="form-select">
+                                <option value="">Choose...</option>
+                                <option value="PBR">PBR</option>
+                                <option value="Open Pond">Open Pond</option>
+                                <option value="Bottle">Bottle</option>
+                                <option value="Tank">Tank</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 d-none" id="otherContainerKindTextBox">
+                        <label>Custom Type Name</label>
+                        <input type="text" name="other_container_kind_text" id="otherContainerKindTextInput" class="form-control" placeholder="Example: Acrylic reactor, glass tank, custom pond">
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-success">OD READINGS (680nm)</label>
-                        <div class="d-flex gap-2">
-                            <input type="number" step="0.0001" name="od1" class="form-control od-in" placeholder="1" required>
-                            <input type="number" step="0.0001" name="od2" class="form-control od-in" placeholder="2" required>
-                            <input type="number" step="0.0001" name="od3" class="form-control od-in" placeholder="3" required>
-                        </div>
-                        <div class="avg-label mt-1">Mean OD: <span id="odAvg" class="text-white">--</span></div>
+                        <label>Culture Condition</label>
+                        <select name="culture_condition" class="form-select" required>
+                            <option value="">Choose...</option>
+                            <option value="Control">Control</option>
+                            <option value="Low Pineapple">Low Pineapple</option>
+                            <option value="Medium Pineapple">Medium Pineapple</option>
+                            <option value="High Pineapple">High Pineapple</option>
+                            <option value="AI Recommended">AI Recommended</option>
+                            <option value="Without Pineapple">Without Pineapple</option>
+                            <option value="With Pineapple">With Pineapple</option>
+                        </select>
                     </div>
 
-                    <div class="row mb-4">
+                    <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label class="small fw-bold">NITRATE (ppm)</label>
-                            <input type="number" name="nitrate" class="form-control" required>
+                            <label>Working Volume L</label>
+                            <input type="number" step="0.01" name="volume_l" class="form-control" value="10" required>
                         </div>
                         <div class="col-6">
-                            <label class="small fw-bold">VOLUME (ml)</label>
-                            <input type="number" name="volume" class="form-control" value="10000">
+                            <label>Sampling Volume L</label>
+                            <input type="number" step="0.001" name="sampling_volume_l" class="form-control" value="0.05" required>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-ai w-100 text-white">GENERATE ANALYSIS</button>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label>Nitrate Status</label>
+                            <select name="nitrate_status" id="nitrateStatusSelect" class="form-select">
+                                <option value="Measured">Measured</option>
+                                <option value="Not Measured">Not Measured</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label>Nitrate ppm Optional</label>
+                            <input type="number" step="0.01" name="nitrate" id="nitrateInput" class="form-control" placeholder="Blank if not measured">
+                        </div>
+                    </div>
+                    <div class="small-muted mb-3">
+                        Do not enter 0 unless nitrate was truly measured as 0 ppm.
+                    </div>
+
+                    <div class="mb-3">
+                        <label>OD750 Readings</label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <input type="number" step="0.0001" name="od1" class="form-control od-input" placeholder="OD750 1" required>
+                            </div>
+                            <div class="col-4">
+                                <input type="number" step="0.0001" name="od2" class="form-control od-input" placeholder="OD750 2" required>
+                            </div>
+                            <div class="col-4">
+                                <input type="number" step="0.0001" name="od3" class="form-control od-input" placeholder="OD750 3" required>
+                            </div>
+                        </div>
+                        <span class="avg-pill">Mean OD750: <strong id="odAvg">--</strong></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>pH Readings</label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <input type="number" step="0.01" name="ph1" class="form-control ph-input" placeholder="pH1" required>
+                            </div>
+                            <div class="col-4">
+                                <input type="number" step="0.01" name="ph2" class="form-control ph-input" placeholder="pH2" required>
+                            </div>
+                            <div class="col-4">
+                                <input type="number" step="0.01" name="ph3" class="form-control ph-input" placeholder="pH3" required>
+                            </div>
+                        </div>
+                        <span class="avg-pill">Mean pH: <strong id="phAvg">--</strong></span>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label>Pineapple Dose ml</label>
+                            <input type="number" step="0.01" name="pineapple_dose" class="form-control" value="0" required>
+                        </div>
+                        <div class="col-6">
+                            <label>KNO3 Dose ml</label>
+                            <input type="number" step="0.01" name="kno3_dose" class="form-control" value="0" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label>Air Flow Rate L/min Optional</label>
+                            <input type="number" step="0.01" name="air_flow_rate" class="form-control" placeholder="Example: 1.5">
+                        </div>
+
+                        <div class="col-6">
+                            <label>CO₂ Status Optional</label>
+                            <select name="co2_status" class="form-select">
+                                <option value="Not Recorded">Not Recorded</option>
+                                <option value="OFF">OFF</option>
+                                <option value="ON">ON</option>
+                                <option value="Pulse">Pulse</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label>CO₂ Flow Rate L/min Optional</label>
+                            <input type="number" step="0.01" name="co2_flow_rate" class="form-control" placeholder="Example: 0.2">
+                        </div>
+
+                        <div class="col-6">
+                            <label>CO₂ Duration min Optional</label>
+                            <input type="number" step="0.01" name="co2_duration_min" class="form-control" placeholder="Example: 10">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Culture Image Optional</label>
+                        <input type="file" name="culture_image" class="form-control" accept="image/png, image/jpeg, image/jpg">
+                        <div class="small-muted mt-1">
+                            Use same lighting, distance, and background every day for better AI image features.
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label>Biomass g Optional</label>
+                            <input type="number" step="0.0001" name="biomass_g" class="form-control" placeholder="Only at harvest">
+                        </div>
+                        <div class="col-6">
+                            <label>Harvested?</label>
+                            <select name="harvested" class="form-select">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label>Notes</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Rain, contamination, nitrate not measured, color change, etc."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-ai w-100">
+                        Predict OD750 & Harvest Time
+                    </button>
+
                 </form>
+
+                <div id="errorBox" class="alert alert-danger mt-4 d-none"></div>
+                <div id="successBox" class="alert alert-success mt-4 d-none"></div>
+
             </div>
         </div>
 
-        <div class="col-lg-7">
-            <div id="results" style="display:none;">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="result-box" style="border-color: var(--blue);">
-                            <label class="text-secondary small fw-bold">PINEAPPLE JUICE DOSAGE</label>
-                            <h2 class="text-primary fw-bold" id="resPine">--</h2>
-                            <p class="mb-0 text-secondary small" id="resPred"></p>
+        <div class="col-xl-8 col-lg-7">
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-3 col-6">
+                    <div class="mini-card">
+                        <div class="metric-label">Average OD750</div>
+                        <div class="metric-value" id="metricOD">--</div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 col-6">
+                    <div class="mini-card">
+                        <div class="metric-label">Previous OD750 Auto</div>
+                        <div class="metric-value text-info" id="metricPreviousOD">--</div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 col-6">
+                    <div class="mini-card">
+                        <div class="metric-label">Predicted Next OD750</div>
+                        <div class="metric-value text-success" id="metricNextOD">--</div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 col-6">
+                    <div class="mini-card">
+                        <div class="metric-label">Readiness</div>
+                        <div class="metric-value text-warning" id="metricReadiness">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card mb-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h4 class="fw-bold mb-1">AI Decision Support</h4>
+                        <div class="small-muted">Prediction, dosing advice, CO₂ control, and harvest recommendation.</div>
+                    </div>
+                    <span class="badge rounded-pill text-bg-secondary" id="selectedContainerBadge">No container selected</span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="mini-card" id="harvestDaysCard">
+                            <div class="metric-label">Days to Harvest</div>
+                            <div class="metric-value text-info" id="metricHarvestDays">--</div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="result-box">
-                            <label class="text-secondary small fw-bold">KNO3 ADJUSTMENT</label>
-                            <h4 class="text-success fw-bold" id="resKno3">--</h4>
+
+                    <div class="col-md-4">
+                        <div class="mini-card" id="harvestStatusCard">
+                            <div class="metric-label">Harvest Status</div>
+                            <div class="metric-value text-warning" id="resHarvestStatus">--</div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="result-box" style="border-color: #ef4444;">
-                            <label class="text-secondary small fw-bold">CULTURE HEALTH</label>
-                            <h4 class="text-danger fw-bold" id="resHealth">--</h4>
+
+                    <div class="col-md-4">
+                        <div class="mini-card" id="healthCard">
+                            <div class="metric-label">Culture Health</div>
+                            <div class="metric-value text-info" id="resHealth">--</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mini-card">
+                            <div class="metric-label">KNO3 Advice</div>
+                            <div class="metric-value text-success" id="resKno3">--</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mini-card">
+                            <div class="metric-label">Pineapple Advice</div>
+                            <div class="metric-value text-info" id="resPineapple">--</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mini-card">
+                            <div class="metric-label">CO₂ Advice</div>
+                            <div class="metric-value text-warning" id="resCO2">--</div>
                         </div>
                     </div>
                 </div>
-                <div class="card-custom mt-3">
-                    <canvas id="growthChart" height="200"></canvas>
+            </div>
+
+            <div class="dashboard-card mb-4">
+                <h4 class="fw-bold mb-1">OD750 Actual vs Predicted</h4>
+                <div class="small-muted mb-3">Main AI prediction graph.</div>
+                <canvas id="odChart"></canvas>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="dashboard-card">
+                        <h4 class="fw-bold mb-1">pH Trend</h4>
+                        <div class="small-muted mb-3">Culture acidity/alkalinity monitoring.</div>
+                        <canvas id="phChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="dashboard-card">
+                        <h4 class="fw-bold mb-1">Nitrate Trend</h4>
+                        <div class="small-muted mb-3">Blank when nitrate was not measured.</div>
+                        <canvas id="nitrateChart"></canvas>
+                    </div>
                 </div>
             </div>
-            <div id="empty" class="card-custom text-center py-5 text-secondary">
-                <h3>Awaiting Lab Input</h3>
-                <p>System ready for data synchronization.</p>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="dashboard-card">
+                        <h4 class="fw-bold mb-1">Dose History</h4>
+                        <div class="small-muted mb-3">Pineapple and KNO3 dosing.</div>
+                        <canvas id="doseChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="dashboard-card">
+                        <h4 class="fw-bold mb-1">Harvest Readiness</h4>
+                        <div class="small-muted mb-3">Readiness percentage toward target OD750.</div>
+                        <canvas id="readinessChart"></canvas>
+                    </div>
+                </div>
             </div>
+
+            <div class="dashboard-card mb-4">
+                <h4 class="fw-bold mb-1">Image Feature Trend</h4>
+                <div class="small-muted mb-3">Green index and brightness from uploaded images.</div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="mini-card">
+                            <div class="metric-label">Image Uploaded</div>
+                            <div class="metric-value" id="metricImageUploaded">--</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mini-card">
+                            <div class="metric-label">Green Index</div>
+                            <div class="metric-value text-success" id="metricGreenIndex">--</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="mini-card">
+                            <div class="metric-label">Brightness</div>
+                            <div class="metric-value text-info" id="metricBrightness">--</div>
+                        </div>
+                    </div>
+                </div>
+                <canvas id="imageChart"></canvas>
+            </div>
+
+            <div class="dashboard-card">
+                <h4 class="fw-bold mb-1">Recent Records</h4>
+                <div class="small-muted mb-3">Latest cultivation data saved in Google Sheets.</div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle" id="recentTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Day</th>
+                                <th>AvgOD750</th>
+                                <th>Pred OD750</th>
+                                <th>pH</th>
+                                <th>Nitrate</th>
+                                <th>Nitrate Status</th>
+                                <th>CO₂</th>
+                                <th>Harvest</th>
+                                <th>Readiness</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center small-muted py-4">No data loaded yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
+
     </div>
 </div>
 
 <script>
-    let chart;
-    // UI Averaging
-    function setupAvg(selector, target, dec) {
-        document.querySelectorAll(selector).forEach(el => {
-            el.addEventListener('input', () => {
-                let sum = 0, count = 0;
-                document.querySelectorAll(selector).forEach(i => {
-                    if(i.value) { sum += parseFloat(i.value); count++; }
-                });
-                document.getElementById(target).innerText = count > 0 ? (sum/count).toFixed(dec) : "--";
+    let charts = {};
+
+    function showError(message) {
+        document.getElementById("errorBox").innerText = message;
+        document.getElementById("errorBox").classList.remove("d-none");
+        document.getElementById("successBox").classList.add("d-none");
+    }
+
+    function showSuccess(message) {
+        document.getElementById("successBox").innerText = message;
+        document.getElementById("successBox").classList.remove("d-none");
+        document.getElementById("errorBox").classList.add("d-none");
+    }
+
+    function calculateAverage(selector, target, decimals) {
+        let sum = 0;
+        let count = 0;
+
+        document.querySelectorAll(selector).forEach(input => {
+            if (input.value !== "") {
+                sum += parseFloat(input.value);
+                count++;
+            }
+        });
+
+        document.getElementById(target).innerText =
+            count > 0 ? (sum / count).toFixed(decimals) : "--";
+    }
+
+    document.querySelectorAll(".od-input").forEach(input => {
+        input.addEventListener("input", () => calculateAverage(".od-input", "odAvg", 4));
+    });
+
+    document.querySelectorAll(".ph-input").forEach(input => {
+        input.addEventListener("input", () => calculateAverage(".ph-input", "phAvg", 2));
+    });
+
+    const nitrateStatusSelect = document.getElementById("nitrateStatusSelect");
+    const nitrateInput = document.getElementById("nitrateInput");
+
+    nitrateStatusSelect.addEventListener("change", function () {
+        if (this.value === "Not Measured") {
+            nitrateInput.value = "";
+            nitrateInput.disabled = true;
+        } else {
+            nitrateInput.disabled = false;
+        }
+    });
+
+    async function loadContainers() {
+        const select = document.getElementById("containerSelect");
+        select.innerHTML = `<option value="">Loading...</option>`;
+
+        try {
+            const res = await fetch("/containers");
+            const data = await res.json();
+
+            if (data.status !== "success") {
+                showError(data.message);
+                select.innerHTML = `<option value="">Failed to load</option>`;
+                return;
+            }
+
+            select.innerHTML = `<option value="">Choose container...</option>`;
+
+            data.containers.forEach(name => {
+                const option = document.createElement("option");
+                option.value = name;
+                option.textContent = name;
+                select.appendChild(option);
             });
+
+        } catch (err) {
+            showError("Failed to load containers: " + err.message);
+        }
+    }
+
+    async function createContainer() {
+        const input = document.getElementById("newContainerName");
+        const startDateInput = document.getElementById("newCultureStartDate");
+        const name = input.value.trim();
+        const cultureStartDate = startDateInput.value;
+
+        if (!name) {
+            showError("Please enter container name.");
+            return;
+        }
+
+        if (!cultureStartDate) {
+            showError("Please enter the culture start date / Day 1 date.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("container_name", name);
+        formData.append("culture_start_date", cultureStartDate);
+
+        try {
+            const res = await fetch("/create_container", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.status === "success") {
+                showSuccess(data.message);
+                input.value = "";
+                startDateInput.value = "";
+                await loadContainers();
+                document.getElementById("containerSelect").value = data.container;
+                loadContainerMeta(data.container);
+                loadHistory(data.container);
+            } else {
+                showError(data.message);
+            }
+
+        } catch (err) {
+            showError("Failed to create container: " + err.message);
+        }
+    }
+
+    function calculateAutoCultureDayPreview() {
+        const startDate = document.getElementById("cultureStartDateExisting").value;
+        const dataDate = document.getElementById("dataCollectionDate").value;
+        const preview = document.getElementById("autoCultureDayPreview");
+
+        if (!startDate || !dataDate) {
+            preview.value = "Select container and date";
+            return;
+        }
+
+        const start = new Date(startDate + "T00:00:00");
+        const data = new Date(dataDate + "T00:00:00");
+        const diffMs = data - start;
+
+        if (diffMs < 0) {
+            preview.value = "Invalid: before Day 1";
+            return;
+        }
+
+        const cultureDay = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+        preview.value = "Day " + cultureDay;
+    }
+
+    async function loadContainerMeta(container) {
+        if (!container) return;
+
+        const startDateField = document.getElementById("cultureStartDateExisting");
+        const help = document.getElementById("cultureStartDateHelp");
+
+        try {
+            const res = await fetch(`/container_meta/${encodeURIComponent(container)}`);
+            const data = await res.json();
+
+            if (data.status !== "success") {
+                showError(data.message);
+                return;
+            }
+
+            if (data.has_culture_start_date) {
+                startDateField.value = data.culture_start_date;
+                startDateField.readOnly = true;
+                help.innerText = "Saved Day 1 date for this container. Culture day is calculated automatically from the data collection date.";
+            } else {
+                startDateField.value = "";
+                startDateField.readOnly = false;
+                help.innerText = "This older container has no saved Day 1 date yet. Enter it once; the dashboard will save it on the next submission.";
+            }
+
+            calculateAutoCultureDayPreview();
+
+        } catch (err) {
+            showError("Failed to load container start date: " + err.message);
+        }
+    }
+
+    async function loadHistory(container) {
+        if (!container) return;
+
+        document.getElementById("selectedContainerBadge").innerText = container;
+
+        try {
+            const res = await fetch(`/history/${encodeURIComponent(container)}`);
+            const data = await res.json();
+
+            if (data.status === "success") {
+                updateAllCharts(data.history);
+                updateRecentTable(data.history);
+            } else {
+                showError(data.message);
+            }
+
+        } catch (err) {
+            showError("Failed to load history: " + err.message);
+        }
+    }
+
+    function parseValue(value) {
+        const num = parseFloat(value);
+        return isNaN(num) ? null : num;
+    }
+
+    function destroyChart(id) {
+        if (charts[id]) {
+            charts[id].destroy();
+        }
+    }
+
+    function createLineChart(id, labels, datasets) {
+        destroyChart(id);
+
+        charts[id] = new Chart(document.getElementById(id), {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: "#e7f7f4" }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#8ba7a2" },
+                        grid: { color: "rgba(139,167,162,0.08)" }
+                    },
+                    y: {
+                        ticks: { color: "#8ba7a2" },
+                        grid: { color: "rgba(139,167,162,0.08)" }
+                    }
+                }
+            }
         });
     }
-    setupAvg('.ph-in', 'phAvg', 2); setupAvg('.od-in', 'odAvg', 4);
 
-    // Form Submit
-    document.getElementById('labForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = e.target.querySelector('button');
-        btn.innerText = "Syncing Cloud..."; btn.disabled = true;
+    function createBarChart(id, labels, datasets) {
+        destroyChart(id);
 
-        const res = await fetch('/process', { method: 'POST', body: new FormData(e.target) });
-        const data = await res.json();
-        
-        btn.innerText = "GENERATE ANALYSIS"; btn.disabled = false;
-        if(data.status === 'success') {
-            document.getElementById('empty').style.display = 'none';
-            document.getElementById('results').style.display = 'block';
-            document.getElementById('resPine').innerText = "Add " + data.pineapple;
-            document.getElementById('resPred').innerText = data.prediction;
-            document.getElementById('resKno3').innerText = data.kno3;
-            document.getElementById('resHealth').innerText = data.ph_warn;
-            
-            // Update Graph
-            const labels = data.history.slice(1).map(r => r[1]);
-            const values = data.history.slice(1).map(r => parseFloat(r[5]));
-            if(chart) chart.destroy();
-            chart = new Chart(document.getElementById('growthChart'), {
-                type: 'line',
-                data: { labels: labels, datasets: [{ label: 'Avg OD', data: values, borderColor: '#10b981', tension: 0.3, fill: true, backgroundColor: 'rgba(16,185,129,0.1)' }] },
-                options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#64748b' } }, x: { ticks: { color: '#64748b' } } } }
-            });
+        charts[id] = new Chart(document.getElementById(id), {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: "#e7f7f4" }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#8ba7a2" },
+                        grid: { color: "rgba(139,167,162,0.08)" }
+                    },
+                    y: {
+                        ticks: { color: "#8ba7a2" },
+                        grid: { color: "rgba(139,167,162,0.08)" }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateAllCharts(history) {
+        const rows = history.slice(1);
+        const validRows = rows.filter(r => r.length > 13 && r[3]);
+
+        const labels = validRows.map(r => `Day ${r[3]}`);
+
+        const avgOD = validRows.map(r => parseValue(r[13]));
+        const predictedOD = validRows.map(r => parseValue(r[34]));
+        const ph = validRows.map(r => parseValue(r[17]));
+        const nitrate = validRows.map(r => parseValue(r[18]));
+        const pineapple = validRows.map(r => parseValue(r[20]) || 0);
+        const kno3 = validRows.map(r => parseValue(r[21]) || 0);
+        const readiness = validRows.map(r => parseValue(r[38]));
+        const greenIndex = validRows.map(r => parseValue(r[31]));
+        const brightness = validRows.map(r => parseValue(r[30]));
+
+        createLineChart("odChart", labels, [
+            {
+                label: "Actual AvgOD750",
+                data: avgOD,
+                borderColor: "#10b981",
+                backgroundColor: "rgba(16,185,129,0.12)",
+                fill: true,
+                tension: 0.35
+            },
+            {
+                label: "Predicted Next OD750",
+                data: predictedOD,
+                borderColor: "#38bdf8",
+                backgroundColor: "rgba(56,189,248,0.08)",
+                fill: false,
+                tension: 0.35
+            }
+        ]);
+
+        createLineChart("phChart", labels, [
+            {
+                label: "Avg pH",
+                data: ph,
+                borderColor: "#facc15",
+                backgroundColor: "rgba(250,204,21,0.10)",
+                fill: true,
+                tension: 0.35
+            }
+        ]);
+
+        createLineChart("nitrateChart", labels, [
+            {
+                label: "Nitrate ppm",
+                data: nitrate,
+                borderColor: "#38bdf8",
+                backgroundColor: "rgba(56,189,248,0.10)",
+                fill: true,
+                tension: 0.35
+            }
+        ]);
+
+        createBarChart("doseChart", labels, [
+            {
+                label: "Pineapple Dose ml",
+                data: pineapple,
+                backgroundColor: "rgba(16,185,129,0.55)"
+            },
+            {
+                label: "KNO3 Dose ml",
+                data: kno3,
+                backgroundColor: "rgba(56,189,248,0.55)"
+            }
+        ]);
+
+        createLineChart("readinessChart", labels, [
+            {
+                label: "Harvest Readiness %",
+                data: readiness,
+                borderColor: "#ef4444",
+                backgroundColor: "rgba(239,68,68,0.10)",
+                fill: true,
+                tension: 0.35
+            }
+        ]);
+
+        createLineChart("imageChart", labels, [
+            {
+                label: "Green Index",
+                data: greenIndex,
+                borderColor: "#10b981",
+                backgroundColor: "rgba(16,185,129,0.10)",
+                fill: false,
+                tension: 0.35
+            },
+            {
+                label: "Brightness",
+                data: brightness,
+                borderColor: "#38bdf8",
+                backgroundColor: "rgba(56,189,248,0.10)",
+                fill: false,
+                tension: 0.35
+            }
+        ]);
+    }
+
+    function updateRecentTable(history) {
+        const tbody = document.querySelector("#recentTable tbody");
+        const rows = history.slice(1).slice(-8).reverse();
+
+        if (rows.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center small-muted py-4">No records yet.</td>
+                </tr>
+            `;
+            return;
         }
-    };
+
+        tbody.innerHTML = "";
+
+        rows.forEach(r => {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>${r[1] || "--"}</td>
+                <td>${r[3] || "--"}</td>
+                <td>${r[13] || "--"}</td>
+                <td>${r[34] || "--"}</td>
+                <td>${r[17] || "--"}</td>
+                <td>${r[18] || "--"}</td>
+                <td>${r[19] || "--"}</td>
+                <td>${r[23] || "--"}</td>
+                <td>${r[37] || "--"}</td>
+                <td>${r[38] || "--"}%</td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    function clearDecisionClasses() {
+        ["harvestDaysCard", "harvestStatusCard", "healthCard"].forEach(id => {
+            const el = document.getElementById(id);
+            el.classList.remove("decision-ready", "decision-warning", "decision-critical");
+        });
+    }
+
+    function styleDecisionCards(harvestStatus, cultureHealth) {
+        clearDecisionClasses();
+
+        const harvestDaysCard = document.getElementById("harvestDaysCard");
+        const harvestStatusCard = document.getElementById("harvestStatusCard");
+        const healthCard = document.getElementById("healthCard");
+
+        if ((harvestStatus || "").includes("READY TO HARVEST")) {
+            harvestDaysCard.classList.add("decision-ready");
+            harvestStatusCard.classList.add("decision-ready");
+        } else if ((harvestStatus || "").includes("ALMOST READY")) {
+            harvestStatusCard.classList.add("decision-warning");
+        }
+
+        if ((cultureHealth || "").includes("CRITICAL")) {
+            healthCard.classList.add("decision-critical");
+        } else if ((cultureHealth || "").includes("WARNING")) {
+            healthCard.classList.add("decision-warning");
+        }
+    }
+
+    document.getElementById("dataCollectionDate").addEventListener("change", calculateAutoCultureDayPreview);
+    document.getElementById("cultureStartDateExisting").addEventListener("change", calculateAutoCultureDayPreview);
+
+    document.getElementById("containerSelect").addEventListener("change", function () {
+        const selected = this.value;
+        if (selected) {
+            loadContainerMeta(selected);
+            loadHistory(selected);
+        }
+    });
+
+    document.getElementById("labForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const button = form.querySelector("button[type='submit']");
+
+        button.innerText = "Processing...";
+        button.disabled = true;
+        form.classList.add("loading");
+
+        try {
+            const res = await fetch("/process", {
+                method: "POST",
+                body: new FormData(form)
+            });
+
+            const data = await res.json();
+
+            if (data.status === "success") {
+                showSuccess(
+                    "Data saved for " + data.container +
+                    " | Auto culture day: Day " + data.auto_day +
+                    " | Data date: " + data.data_collection_date
+                );
+
+                document.getElementById("cultureStartDateExisting").value = data.culture_start_date || "";
+                document.getElementById("cultureStartDateExisting").readOnly = true;
+                document.getElementById("cultureStartDateHelp").innerText =
+                    "Saved Day 1 date for this container. Culture day is calculated automatically from the data collection date.";
+                calculateAutoCultureDayPreview();
+
+                document.getElementById("selectedContainerBadge").innerText = data.container;
+
+                document.getElementById("metricOD").innerText = data.avg_od;
+                document.getElementById("metricPreviousOD").innerText = data.previous_od;
+                document.getElementById("metricNextOD").innerText = data.next_od_predicted;
+                document.getElementById("metricHarvestDays").innerText = data.days_to_harvest;
+                document.getElementById("metricReadiness").innerText = data.readiness_percent + "%";
+
+                document.getElementById("resHarvestStatus").innerText = data.harvest_status;
+                document.getElementById("resKno3").innerText = data.kno3_advice;
+                document.getElementById("resPineapple").innerText = data.pineapple_advice;
+                document.getElementById("resCO2").innerText = data.co2_advice;
+                document.getElementById("resHealth").innerText = data.culture_health;
+
+                document.getElementById("metricImageUploaded").innerText = data.image_uploaded;
+                document.getElementById("metricGreenIndex").innerText = data.image_green_index || "--";
+                document.getElementById("metricBrightness").innerText = data.image_brightness || "--";
+
+                styleDecisionCards(data.harvest_status, data.culture_health);
+
+                updateAllCharts(data.history);
+                updateRecentTable(data.history);
+            } else {
+                showError(data.message);
+            }
+
+        } catch (err) {
+            showError("Submit failed: " + err.message);
+        }
+
+        button.innerText = "Predict OD750 & Harvest Time";
+        button.disabled = false;
+        form.classList.remove("loading");
+    });
+
+    const containerTypeSelect = document.getElementById("containerTypeSelect");
+    const otherContainerTypeBox = document.getElementById("otherContainerTypeBox");
+    const otherContainerLiterInput = document.getElementById("otherContainerLiterInput");
+    const otherContainerKindSelect = document.getElementById("otherContainerKindSelect");
+    const otherContainerKindTextBox = document.getElementById("otherContainerKindTextBox");
+    const otherContainerKindTextInput = document.getElementById("otherContainerKindTextInput");
+
+    containerTypeSelect.addEventListener("change", function () {
+        if (this.value === "Other") {
+            otherContainerTypeBox.classList.remove("d-none");
+
+            otherContainerLiterInput.required = true;
+            otherContainerKindSelect.required = true;
+        } else {
+            otherContainerTypeBox.classList.add("d-none");
+            otherContainerKindTextBox.classList.add("d-none");
+
+            otherContainerLiterInput.required = false;
+            otherContainerKindSelect.required = false;
+            otherContainerKindTextInput.required = false;
+
+            otherContainerLiterInput.value = "";
+            otherContainerKindSelect.value = "";
+            otherContainerKindTextInput.value = "";
+        }
+    });
+
+    otherContainerKindSelect.addEventListener("change", function () {
+        if (this.value === "Other") {
+            otherContainerKindTextBox.classList.remove("d-none");
+            otherContainerKindTextInput.required = true;
+        } else {
+            otherContainerKindTextBox.classList.add("d-none");
+            otherContainerKindTextInput.required = false;
+            otherContainerKindTextInput.value = "";
+        }
+    });
+
+    const todayLocal = new Date();
+    const year = todayLocal.getFullYear();
+    const month = String(todayLocal.getMonth() + 1).padStart(2, "0");
+    const dayLocal = String(todayLocal.getDate()).padStart(2, "0");
+    document.getElementById("dataCollectionDate").value = `${year}-${month}-${dayLocal}`;
+
+    loadContainers();
 </script>
+
 </body>
 </html>
