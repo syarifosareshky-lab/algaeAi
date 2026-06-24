@@ -2,5 +2,6 @@ flask
 gspread
 google-auth
 pandas
-xgboost
+scikit-learn
 gunicorn
+pillow
