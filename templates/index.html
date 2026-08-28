@@ -1,155 +1,458 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desmodesmus AI Optimizer</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root { --bg: #0b0f0f; --card: #151d1d; --border: #263636; --green: #10b981; --blue: #3b82f6; }
-        body { background: var(--bg); color: #e2e8f0; font-family: sans-serif; }
-        .card-custom { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .form-control { background: #0b0f0f; border: 1px solid var(--border); color: white; }
-        .form-control:focus { background: #0b0f0f; color: white; border-color: var(--green); box-shadow: none; }
-        .btn-ai { background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold; padding: 15px; }
-        .result-box { border-left: 5px solid var(--green); background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 12px; }
-        .avg-label { font-size: 0.8rem; color: #64748b; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desmodesmus maximus — Growth Optimizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --canvas: #FFFFFF;
+    --dot: #E7E9E4;
+    --card: #FFFFFF;
+    --border: #E7EAE2;
+    --text: #12170F;
+    --text-dim: #6B756A;
+    --text-faint: #9BA79C;
+
+    --pink: #E63A8C;
+    --pink-dim: #FBE1EC;
+    --yellow: #F5E67A;
+    --yellow-dim: #FBF6D2;
+    --green: #1F9254;
+    --green-dim: #DFF3E6;
+    --amber: #D6982E;
+    --amber-dim: #FBF0DC;
+    --ink: #12170F;
+
+    --font-brand: 'Fraunces', serif;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --shadow: 0 24px 60px rgba(18,23,15,0.08), 0 2px 8px rgba(18,23,15,0.04);
+  }
+  *{ box-sizing: border-box; }
+  body{ margin:0; color: var(--text); font-family: var(--font-body); background: #fff; -webkit-font-smoothing: antialiased; }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 18px 28px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 14px;
+  }
+  .brand{ font-family: var(--font-brand); font-weight:600; font-size:22px; display:flex; align-items:center; gap:8px; }
+  .brand svg{ display:block; }
+  .crumb{ display:flex; align-items:center; gap:8px; font-size:14px; color: var(--text-dim); }
+  .crumb b{ color: var(--text); font-weight:500; }
+  .crumb .sep{ color: var(--text-faint); }
+  .draft-pill{ font-size:11px; font-weight:600; color: var(--pink); background: var(--pink-dim); padding: 3px 10px; border-radius:100px; }
+  .topbar-right{ display:flex; align-items:center; gap: 10px; }
+  .zoom-pill{ font-family: var(--font-mono); font-size:12px; color: var(--text-dim); border:1px solid var(--border); border-radius:100px; padding:7px 12px; }
+  .btn-ghost{ font-size:13px; font-weight:500; color: var(--text-dim); background: transparent; border: 1px solid var(--border); border-radius: 100px; padding: 8px 16px; cursor: pointer; }
+  .btn-solid-dark{ display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color: #fff; background: var(--ink); border: none; border-radius: 100px; padding: 9px 18px; cursor: pointer; }
+
+  /* ---------- Canvas ---------- */
+  .canvas-wrap{
+    position: relative;
+    background-image: radial-gradient(circle, var(--dot) 1.4px, transparent 1.4px);
+    background-size: 26px 26px;
+    min-height: 760px;
+    padding: 0 24px;
+  }
+  .canvas-toolbar{
+    position:absolute; top: 28px; left: 24px; z-index: 5;
+    display:flex; flex-direction: column; gap: 10px;
+  }
+  .toolbar-group{ background:#fff; border:1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 6px; display:flex; flex-direction:column; gap:4px; }
+  .toolbar-group button{ width:34px; height:34px; border:none; background:transparent; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; color: var(--text-dim); }
+  .toolbar-group button:hover{ background: var(--canvas); }
+
+  .connector-svg{ position:absolute; inset:0; width:100%; height:100%; z-index:1; pointer-events:none; }
+
+  .node{
+    position:absolute; background:#fff; border:1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 14px 16px; z-index: 3; display:flex; align-items:center; gap:10px;
+    max-width: 240px;
+  }
+  .node .avatar{ width:36px; height:36px; border-radius:50%; background: var(--canvas); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .node-tag{ display:inline-block; font-size:11px; font-weight:600; padding:3px 9px; border-radius:6px; margin-bottom:4px; }
+  .node-tag.yellow{ background: var(--yellow); color:#5C5219; }
+  .node-title{ font-family: var(--font-display); font-weight:600; font-size:14px; line-height:1.25; }
+  .node-sub{ font-family: var(--font-mono); font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color: var(--text-faint); margin-bottom:4px; }
+
+  .node-pill{
+    position:absolute; z-index:3; display:flex; align-items:center; gap:8px;
+    background: var(--green); color:#fff; font-size:13px; font-weight:600;
+    padding: 10px 16px; border-radius: 100px; box-shadow: var(--shadow);
+  }
+  .node-pill.pending{ background: var(--text-faint); }
+  .node-pill.warn{ background: var(--pink); }
+
+  #nodeA{ top: 190px; left: 4%; }
+  #nodeB{ top: 130px; right: 5%; }
+  #nodePill{ top: 320px; right: 3%; }
+  #nodeD{ bottom: 120px; right: 8%; }
+  .dot-node{ position:absolute; top: 400px; right: 24%; width: 46px; height:46px; border-radius:50%; background:#fff; border: 2px solid var(--yellow); box-shadow: var(--shadow); display:flex; align-items:center; justify-content:center; z-index:3; }
+
+  @media (max-width: 1100px){ #nodeA, #nodeB, #nodePill, #nodeD, .dot-node, .connector-svg{ display:none; } .canvas-wrap{ min-height:auto; padding: 24px; } }
+
+  /* ---------- Modal card ---------- */
+  .modal{
+    position: relative; z-index: 4; max-width: 620px; margin: 56px auto 40px;
+    background:#fff; border:1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow);
+  }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; padding: 18px 22px; border-bottom:1px solid var(--border); }
+  .modal-head-left{ display:flex; align-items:center; gap:8px; font-family: var(--font-display); font-weight:600; font-size:15px; }
+  .beta-pill{ font-size:11px; font-weight:600; color: var(--pink); background: var(--pink-dim); border-radius:100px; padding:3px 9px; }
+  .modal-head-icons{ display:flex; align-items:center; gap:14px; color: var(--text-faint); }
+  .modal-head-icons svg{ cursor:pointer; }
+
+  .modal-body{ padding: 26px 28px 28px; text-align:center; }
+  .avatar-ring{
+    width: 62px; height:62px; border-radius:50%; margin: 4px auto 16px;
+    background: radial-gradient(circle at 35% 30%, #F694C6, var(--pink));
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 0 0 5px var(--pink-dim);
+  }
+  .modal-title{ font-family: var(--font-display); font-weight:700; font-size: 26px; margin: 0 0 6px; }
+  .modal-sub{ font-size: 14px; color: var(--text-dim); margin: 0 0 20px; }
+
+  .chip-row{ display:flex; flex-wrap:wrap; justify-content:center; gap: 8px; margin-bottom: 18px; }
+  .chip{ font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); background: var(--canvas-chip, #F5F6F2); border: 1px solid var(--border); border-radius: 100px; padding: 6px 12px; display:flex; align-items:center; gap:6px; }
+
+  .input-box{ text-align:left; border: 1.5px solid var(--pink); border-radius: 14px; padding: 16px; background:#fff; }
+  .field-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .field-grid.full{ grid-template-columns: 1fr; }
+  label.field-label{ display:block; font-size: 10px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; color: var(--text-dim); margin-bottom: 5px; }
+  .triplicate{ display:flex; gap:6px; }
+  input.form-control{
+    width:100%; background: #F7F8F5; border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 9px 10px; font-family: var(--font-mono); font-size: 13px;
+  }
+  input.form-control::placeholder{ color: var(--text-faint); font-family: var(--font-body); }
+  input.form-control:focus{ outline:none; background:#fff; border-color: var(--pink); box-shadow: 0 0 0 3px var(--pink-dim); }
+  .mean-line{ font-family: var(--font-mono); font-size:11px; color: var(--text-faint); margin: -6px 0 12px 2px; }
+  .mean-line.on{ color: var(--green); }
+
+  .input-box-footer{ display:flex; align-items:center; justify-content:space-between; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 6px; }
+  .icon-btn{ width:38px; height:38px; border-radius:50%; border:1px solid var(--border); background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color: var(--text-dim); }
+  .icon-btn:hover{ background: var(--canvas); }
+  .send-btn{ width: 40px; height:40px; border-radius: 50%; border:none; background: var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .send-btn:hover{ filter: brightness(1.25); }
+  .send-btn:disabled{ opacity:.5; cursor:progress; }
+
+  .suggest-row{ margin-top: 14px; display:flex; flex-direction:column; gap:8px; }
+  .suggest-btn{
+    display:flex; align-items:center; gap:8px; text-align:left; font-size: 13px; color: var(--text-dim);
+    background:#fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor:pointer;
+  }
+  .suggest-btn:hover{ border-color: var(--pink); color: var(--text); }
+  .suggest-btn svg{ flex-shrink:0; color: var(--text-faint); }
+
+  /* ---------- Error ---------- */
+  .error-banner{ display:none; align-items:flex-start; gap:10px; background: var(--pink-dim); border: 1px solid #F4B7D3; color:#A32664; border-radius: var(--radius-md); padding: 12px 16px; margin: 0 auto 18px; max-width: 620px; font-family: var(--font-mono); font-size: 13px; line-height:1.5; }
+  .error-banner .code{ color: var(--pink); font-weight:600; }
+
+  /* ---------- Results row below canvas ---------- */
+  .results-strip{ max-width: 1100px; margin: 0 auto; padding: 0 24px 60px; }
+  .results-strip[hidden]{ display:none; }
+  .strip-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 700px){ .strip-grid{ grid-template-columns: 1fr; } }
+  .strip-card{ background:#fff; border:1px solid var(--border); border-radius: 14px; padding: 16px 18px; box-shadow: var(--shadow); border-left: 3px solid var(--border); }
+  .strip-card.pineapple{ border-left-color: var(--amber); }
+  .strip-card.kno3{ border-left-color: var(--green); }
+  .strip-card.health{ border-left-color: var(--pink); }
+  .strip-tag{ font-family: var(--font-mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color: var(--text-faint); margin-bottom:8px; }
+  .strip-val{ font-family: var(--font-display); font-weight:600; font-size:16px; }
+
+  .trend-panel{ background:#fff; border:1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 22px 22px 12px; }
+  .trend-title{ font-family: var(--font-mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color: var(--text-faint); margin-bottom:14px; }
+</style>
 </head>
 <body>
 
-<div class="container py-5">
-    <header class="text-center mb-5">
-        <h1 class="fw-bold text-success text-uppercase">Algae AI Decision Support</h1>
-        <p class="text-secondary">Precision Carbon & Nutrient Optimization Framework</p>
-    </header>
-
-    <div class="row g-4">
-        <div class="col-lg-5">
-            <div class="card-custom">
-                <form id="labForm">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">TAB NAME (CONTAINER ID)</label>
-                        <input type="text" name="container" class="form-control" placeholder="Bio_A" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-info">pH READINGS (TRIPLICATE)</label>
-                        <div class="d-flex gap-2">
-                            <input type="number" step="0.01" name="ph1" class="form-control ph-in" placeholder="1" required>
-                            <input type="number" step="0.01" name="ph2" class="form-control ph-in" placeholder="2" required>
-                            <input type="number" step="0.01" name="ph3" class="form-control ph-in" placeholder="3" required>
-                        </div>
-                        <div class="avg-label mt-1">Mean pH: <span id="phAvg" class="text-white">--</span></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-success">OD READINGS (680nm)</label>
-                        <div class="d-flex gap-2">
-                            <input type="number" step="0.0001" name="od1" class="form-control od-in" placeholder="1" required>
-                            <input type="number" step="0.0001" name="od2" class="form-control od-in" placeholder="2" required>
-                            <input type="number" step="0.0001" name="od3" class="form-control od-in" placeholder="3" required>
-                        </div>
-                        <div class="avg-label mt-1">Mean OD: <span id="odAvg" class="text-white">--</span></div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-6">
-                            <label class="small fw-bold">NITRATE (ppm)</label>
-                            <input type="number" name="nitrate" class="form-control" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="small fw-bold">VOLUME (ml)</label>
-                            <input type="number" name="volume" class="form-control" value="10000">
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-ai w-100 text-white">GENERATE ANALYSIS</button>
-                </form>
-            </div>
-        </div>
-
-        <div class="col-lg-7">
-            <div id="results" style="display:none;">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="result-box" style="border-color: var(--blue);">
-                            <label class="text-secondary small fw-bold">PINEAPPLE JUICE DOSAGE</label>
-                            <h2 class="text-primary fw-bold" id="resPine">--</h2>
-                            <p class="mb-0 text-secondary small" id="resPred"></p>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="result-box">
-                            <label class="text-secondary small fw-bold">KNO3 ADJUSTMENT</label>
-                            <h4 class="text-success fw-bold" id="resKno3">--</h4>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="result-box" style="border-color: #ef4444;">
-                            <label class="text-secondary small fw-bold">CULTURE HEALTH</label>
-                            <h4 class="text-danger fw-bold" id="resHealth">--</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-custom mt-3">
-                    <canvas id="growthChart" height="200"></canvas>
-                </div>
-            </div>
-            <div id="empty" class="card-custom text-center py-5 text-secondary">
-                <h3>Awaiting Lab Input</h3>
-                <p>System ready for data synchronization.</p>
-            </div>
-        </div>
+  <div class="topbar">
+    <div class="brand">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 17c-3.5-1.2-5-4.2-5-7.5 3.2 0 5.6 1.6 5.6 4.8 0-3.2 2.4-4.8 5.6-4.8 0 3.3-1.5 6.3-5 7.5-.2-1.5-.4-3-.6-4.5-.2 1.5-.4 3-.6 4.5z" fill="#1F9254"/></svg>
+      Algae
     </div>
-</div>
+    <div class="crumb">
+      <b>Console</b><span class="sep">/</span><span id="crumbContainer">new sample</span><span class="draft-pill">Draft</span>
+    </div>
+    <div class="topbar-right">
+      <span class="zoom-pill">100%</span>
+      <button type="button" class="btn-solid-dark">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 8.5V2M6.5 2L4 4.5M6.5 2L9 4.5" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 8.5v2a1 1 0 001 1h7a1 1 0 001-1v-2" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Export
+      </button>
+      <button type="button" class="btn-ghost">Help</button>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <div class="canvas-toolbar">
+      <div class="toolbar-group">
+        <button type="button" aria-label="Fit to screen"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 5V1h4M14 5V1h-4M1 10v4h4M14 10v4h-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
+        <button type="button" aria-label="Zoom in"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 3v9M3 7.5h9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
+        <button type="button" aria-label="Zoom out"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
+
+    <svg class="connector-svg" viewBox="0 0 1400 760" preserveAspectRatio="none">
+      <path d="M 260 230 C 400 230, 420 300, 490 340" stroke="#E63A8C" stroke-width="1.5" fill="none" opacity="0.5"/>
+      <path d="M 1120 175 C 950 200, 900 260, 830 330" stroke="#C7CBC2" stroke-width="1.5" fill="none" opacity="0.6"/>
+      <path d="M 1030 360 C 1000 400, 1010 440, 1080 470" stroke="#C7CBC2" stroke-width="1.5" fill="none" opacity="0.6"/>
+      <path d="M 1150 560 C 1080 540, 1000 500, 900 460" stroke="#E63A8C" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+
+    <div class="node" id="nodeA">
+      <div class="avatar"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2h4M7 2v6.5L4 13a1.5 1.5 0 001.3 2.3h5.4A1.5 1.5 0 0012 13L9 8.5V2" stroke="#1F9254" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
+      <div>
+        <span class="node-tag yellow">Every reading</span>
+        <div class="node-title">pH + OD680 triplicate</div>
+      </div>
+    </div>
+
+    <div class="node" id="nodeB">
+      <div>
+        <div class="node-sub">Predicted</div>
+        <div class="node-title" id="nodeBTitle">Day +1 OD680: —</div>
+      </div>
+    </div>
+
+    <div class="node-pill pending" id="nodePill">Awaiting data</div>
+
+    <div class="node" id="nodeD">
+      <div class="avatar"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2c2 3 4 5.5 4 8a4 4 0 01-8 0c0-2.5 2-5 4-8z" stroke="#D6982E" stroke-width="1.3" stroke-linejoin="round"/></svg></div>
+      <div>
+        <span class="node-sub" style="margin-bottom:2px;">Dose</span>
+        <div class="node-title" id="nodeDTitle">Pineapple + KNO3</div>
+      </div>
+    </div>
+
+    <div class="dot-node"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 15.5c-3-1-4.5-3.5-4.5-6.5 2.8 0 5 1.5 5 4 0-2.5 2.2-4 5-4 0 3-1.5 5.5-4.5 6.5z" fill="#1F9254"/></svg></div>
+
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-head-left">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1l1.2 4.3L13 6.5l-4.3 1.2L7.5 12l-1.2-4.3L2 6.5l4.3-1.2L7.5 1z" fill="#E63A8C"/></svg>
+          Growth AI <span class="beta-pill">Beta</span>
+        </div>
+        <div class="modal-head-icons">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 9v3a1 1 0 001 1h3M13 6V3a1 1 0 00-1-1h-3M2 6V3a1 1 0 011-1h3M13 9v3a1 1 0 01-1 1h-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="3" cy="7.5" r="1.1" fill="currentColor"/><circle cx="7.5" cy="7.5" r="1.1" fill="currentColor"/><circle cx="12" cy="7.5" r="1.1" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="avatar-ring">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 20c-5-1.7-8-6-8-11 4.5 0 8 2 8 6.5 0-4.5 3.5-6.5 8-6.5 0 5-3 9.3-8 11z" fill="white"/></svg>
+        </div>
+        <h1 class="modal-title">Log a reading</h1>
+        <p class="modal-sub">Get instant dosing guidance for this culture.</p>
+
+        <div class="chip-row">
+          <span class="chip">pH</span>
+          <span class="chip">OD680</span>
+          <span class="chip">Nitrate</span>
+          <span class="chip">+ Add channel</span>
+        </div>
+
+        <form id="labForm">
+          <div class="input-box">
+            <div class="field-grid full">
+              <div>
+                <label class="field-label">Container / tab ID</label>
+                <input type="text" name="container" id="containerInput" class="form-control" placeholder="Bio_A" required>
+              </div>
+            </div>
+
+            <label class="field-label">pH (triplicate)</label>
+            <div class="triplicate" style="margin-bottom:2px;">
+              <input type="number" step="0.01" name="ph1" class="form-control ph-in" placeholder="1" required>
+              <input type="number" step="0.01" name="ph2" class="form-control ph-in" placeholder="2" required>
+              <input type="number" step="0.01" name="ph3" class="form-control ph-in" placeholder="3" required>
+            </div>
+            <div class="mean-line" id="phAvg">mean —</div>
+
+            <label class="field-label">OD680 (triplicate)</label>
+            <div class="triplicate" style="margin-bottom:2px;">
+              <input type="number" step="0.0001" name="od1" class="form-control od-in" placeholder="1" required>
+              <input type="number" step="0.0001" name="od2" class="form-control od-in" placeholder="2" required>
+              <input type="number" step="0.0001" name="od3" class="form-control od-in" placeholder="3" required>
+            </div>
+            <div class="mean-line" id="odAvg">mean —</div>
+
+            <div class="field-grid">
+              <div>
+                <label class="field-label">Nitrate (ppm)</label>
+                <input type="number" name="nitrate" class="form-control" required>
+              </div>
+              <div>
+                <label class="field-label">Volume (mL)</label>
+                <input type="number" name="volume" class="form-control" value="10000">
+              </div>
+            </div>
+
+            <div class="input-box-footer">
+              <button type="button" class="icon-btn" id="resetBtn" aria-label="Reset form" title="Reset form">
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M13 7.5A5.5 5.5 0 112.6 4.8M2.5 2v3h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <button type="submit" class="send-btn" aria-label="Run analysis" title="Run analysis">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 12.5V3.5M8 3.5L3.5 8M8 3.5L12.5 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div class="suggest-row">
+          <button type="button" class="suggest-btn" id="fillLastBtn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v6l4 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Fill in my last reading for this container
+          </button>
+          <button type="button" class="suggest-btn" id="scrollTrendBtn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 11l3.5-4L7 9.5 13 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Jump to this container's growth trend
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-banner" id="errorBox">
+    <span class="code">ERR</span>
+    <span id="errorText"></span>
+  </div>
+
+  <div class="results-strip" id="resultsStrip" hidden>
+    <div class="strip-grid">
+      <div class="strip-card pineapple">
+        <div class="strip-tag">Pineapple juice dose</div>
+        <div class="strip-val" id="resPine">—</div>
+      </div>
+      <div class="strip-card kno3">
+        <div class="strip-tag">KNO3 adjustment</div>
+        <div class="strip-val" id="resKno3">—</div>
+      </div>
+      <div class="strip-card health">
+        <div class="strip-tag">Culture health</div>
+        <div class="strip-val" id="resHealth">—</div>
+      </div>
+    </div>
+    <div class="trend-panel" id="trendPanel">
+      <div class="trend-title">Growth trend &middot; Avg OD680 over time</div>
+      <canvas id="growthChart" height="140"></canvas>
+    </div>
+  </div>
 
 <script>
-    let chart;
-    // UI Averaging
-    function setupAvg(selector, target, dec) {
-        document.querySelectorAll(selector).forEach(el => {
-            el.addEventListener('input', () => {
-                let sum = 0, count = 0;
-                document.querySelectorAll(selector).forEach(i => {
-                    if(i.value) { sum += parseFloat(i.value); count++; }
-                });
-                document.getElementById(target).innerText = count > 0 ? (sum/count).toFixed(dec) : "--";
-            });
-        });
+  let chart;
+  let lastReading = null; // { container, ph1,ph2,ph3, od1,od2,od3, nitrate, volume }
+
+  document.getElementById('containerInput').addEventListener('input', (e) => {
+    document.getElementById('crumbContainer').innerText = e.target.value.trim() || 'new sample';
+  });
+
+  function setupAvg(selector, target, dec) {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener('input', () => {
+        let sum = 0, count = 0;
+        document.querySelectorAll(selector).forEach(i => { if (i.value) { sum += parseFloat(i.value); count++; } });
+        const label = document.getElementById(target);
+        if (count > 0) { label.innerText = 'mean ' + (sum / count).toFixed(dec); label.classList.add('on'); }
+        else { label.innerText = 'mean —'; label.classList.remove('on'); }
+      });
+    });
+  }
+  setupAvg('.ph-in', 'phAvg', 2);
+  setupAvg('.od-in', 'odAvg', 4);
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('labForm').reset();
+    document.getElementById('crumbContainer').innerText = 'new sample';
+    ['phAvg', 'odAvg'].forEach(id => { const l = document.getElementById(id); l.innerText = 'mean —'; l.classList.remove('on'); });
+  });
+
+  document.getElementById('fillLastBtn').addEventListener('click', () => {
+    if (!lastReading) return;
+    const form = document.getElementById('labForm');
+    Object.entries(lastReading).forEach(([name, val]) => {
+      const el = form.elements.namedItem(name);
+      if (el) { el.value = val; el.dispatchEvent(new Event('input')); }
+    });
+    document.getElementById('crumbContainer').innerText = lastReading.container || 'new sample';
+  });
+
+  document.getElementById('scrollTrendBtn').addEventListener('click', () => {
+    document.getElementById('trendPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  document.getElementById('labForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const sendBtn = document.querySelector('.send-btn');
+    sendBtn.disabled = true;
+
+    const errorBox = document.getElementById('errorBox');
+    const errorText = document.getElementById('errorText');
+    const formData = new FormData(e.target);
+
+    let data;
+    try {
+      const res = await fetch('/process', { method: 'POST', body: formData });
+      data = await res.json();
+    } catch (err) {
+      sendBtn.disabled = false;
+      errorText.innerText = 'Network error — could not reach the server. Check your connection and try again.';
+      errorBox.style.display = 'flex';
+      return;
     }
-    setupAvg('.ph-in', 'phAvg', 2); setupAvg('.od-in', 'odAvg', 4);
+    sendBtn.disabled = false;
 
-    // Form Submit
-    document.getElementById('labForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = e.target.querySelector('button');
-        btn.innerText = "Syncing Cloud..."; btn.disabled = true;
+    if (data.status === 'error') {
+      errorText.innerText = data.message || 'Something went wrong.';
+      errorBox.style.display = 'flex';
+      return;
+    }
 
-        const res = await fetch('/process', { method: 'POST', body: new FormData(e.target) });
-        const data = await res.json();
-        
-        btn.innerText = "GENERATE ANALYSIS"; btn.disabled = false;
-        if(data.status === 'success') {
-            document.getElementById('empty').style.display = 'none';
-            document.getElementById('results').style.display = 'block';
-            document.getElementById('resPine').innerText = "Add " + data.pineapple;
-            document.getElementById('resPred').innerText = data.prediction;
-            document.getElementById('resKno3').innerText = data.kno3;
-            document.getElementById('resHealth').innerText = data.ph_warn;
-            
-            // Update Graph
-            const labels = data.history.slice(1).map(r => r[1]);
-            const values = data.history.slice(1).map(r => parseFloat(r[5]));
-            if(chart) chart.destroy();
-            chart = new Chart(document.getElementById('growthChart'), {
-                type: 'line',
-                data: { labels: labels, datasets: [{ label: 'Avg OD', data: values, borderColor: '#10b981', tension: 0.3, fill: true, backgroundColor: 'rgba(16,185,129,0.1)' }] },
-                options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#64748b' } }, x: { ticks: { color: '#64748b' } } } }
-            });
+    errorBox.style.display = 'none';
+    if (data.status === 'success') {
+      lastReading = Object.fromEntries(formData.entries());
+
+      document.getElementById('resultsStrip').hidden = false;
+      document.getElementById('resPine').innerText = 'Add ' + data.pineapple;
+      document.getElementById('resKno3').innerText = data.kno3;
+      document.getElementById('resHealth').innerText = data.ph_warn;
+
+      // Update canvas nodes with real results
+      document.getElementById('nodeBTitle').innerText = data.prediction.replace('Day +1 Predicted OD: ', 'Day +1 OD680: ');
+      document.getElementById('nodeDTitle').innerText = data.pineapple + ' + ' + data.kno3;
+      const pillEl = document.getElementById('nodePill');
+      pillEl.classList.remove('pending', 'warn');
+      if (data.ph_warn === 'SYSTEM HEALTHY') { pillEl.innerText = '✓ Culture healthy'; }
+      else { pillEl.innerText = '! ' + data.ph_warn; pillEl.classList.add('warn'); }
+
+      const labels = data.history.slice(1).map(r => r[1]);
+      const values = data.history.slice(1).map(r => parseFloat(r[5]));
+
+      if (chart) chart.destroy();
+      chart = new Chart(document.getElementById('growthChart'), {
+        type: 'line',
+        data: { labels: labels, datasets: [{ label: 'Avg OD680', data: values, borderColor: '#1F9254', pointBackgroundColor: '#1F9254', pointRadius: 3, tension: 0.25, fill: true, backgroundColor: 'rgba(31,146,84,0.08)' }] },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { ticks: { color: '#6B756A', font: { family: 'IBM Plex Mono', size: 11 } }, grid: { color: '#E7EAE2' } },
+            x: { ticks: { color: '#6B756A', font: { family: 'IBM Plex Mono', size: 11 } }, grid: { color: '#F2F3EF' } }
+          }
         }
-    };
+      });
+    }
+  };
 </script>
 </body>
 </html>
